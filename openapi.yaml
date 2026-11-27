@@ -292,7 +292,7 @@ components:
         itens:
           type: array
           items: { $ref: '#/components/schemas/ItemDoacao' }
-      required: [id_doacao, data_doacao, doador, itens]
+      required: [id_doacao, data_doacao, status, doador, itens]
     NovaDoacao:
       type: object
       properties:
