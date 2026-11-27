@@ -283,8 +283,9 @@ async function alterarStatus(id, status) {
   } catch (e) { aviso(e.message, "erro"); }
 }
 function imprimirRelatorio() {
-  const janela = window.open("", "_blank", "noopener,noreferrer");
+  const janela = window.open("", "_blank");
   if (!janela) throw new Error("Permita a abertura de janelas para gerar o relatório.");
+  janela.opener = null;
   const linhas = state.doacoes.flatMap(doacao => {
     const itens = doacao.itens?.length ? doacao.itens : [null];
     return itens.map(item => `<tr>
