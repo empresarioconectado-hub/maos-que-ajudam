@@ -25,12 +25,13 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     ["Administrador de teste", emailAdmin, hashAdmin],
   );
 
-  const servidor = app.listen(0);
-  await new Promise(resolve => servidor.once("listening", resolve));
+  let servidor;
   t.after(async () => {
-    await new Promise(resolve => servidor.close(resolve));
+    if (servidor) await new Promise(resolve => servidor.close(resolve));
     await pool.end();
   });
+  servidor = app.listen(0);
+  await new Promise(resolve => servidor.once("listening", resolve));
 
   const base = `http://127.0.0.1:${servidor.address().port}`;
   let token = null;
@@ -196,4 +197,17 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   token = tokenOperador;
   const acessoContaInativa = await request("/api/doadores");
   assert.equal(acessoContaInativa.status, 401);
+
+  for (let tentativa = 0; tentativa < 10; tentativa += 1) {
+    const falhaLogin = await request("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email: emailOperador, senha: "senha-incorreta" }),
+    });
+    assert.equal(falhaLogin.status, 401);
+  }
+  const limiteLogin = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: emailOperador, senha: "senha-incorreta" }),
+  });
+  assert.equal(limiteLogin.status, 429);
 });
