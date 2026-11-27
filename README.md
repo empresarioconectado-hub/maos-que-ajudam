@@ -123,6 +123,16 @@ A rota de doações valida todos os dados e grava a doação e seus itens em uma
 - Erros internos retornam mensagem genérica; detalhes técnicos ficam apenas no log do servidor.
 - O middleware centralizado trata JSON malformado, payload excessivo, erros de banco e rotas inexistentes.
 
+## Testes automatizados
+
+Execute as validações de entrada sem precisar conectar ao banco:
+
+```bash
+npm test
+```
+
+O conjunto cobre normalização de doadores, limites de campos, e-mail, data, itens repetidos e quantidades. A integração contínua executa os testes e gera o build do frontend a cada push ou pull request para `master`.
+
 ## Testes manuais
 
 Com a API em execução, abra \`api.http\` no VS Code com a extensão REST Client. Execute as requisições em sequência e ajuste os IDs conforme as respostas do banco. O arquivo inclui testes de CRUD, validação, integridade referencial e rollback.
