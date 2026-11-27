@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { gerarHashSenha, verificarSenha, emitirToken, autenticar } from "../server/auth.js";
+import { gerarHashSenha, verificarSenha, emitirToken, validarToken } from "../server/auth.js";
 
 process.env.AUTH_SECRET = "segredo-exclusivo-para-testes-com-mais-de-32-bytes";
 
@@ -17,29 +17,11 @@ test("rejeita senhas abaixo e acima do limite", async () => {
   await assert.rejects(() => gerarHashSenha("x".repeat(129)), { status: 400 });
 });
 
-test("valida assinatura e expiração do token bearer", () => {
-  const token = emitirToken({
-    id_usuario: 7,
-    email: "admin@exemplo.test",
-    perfil: "administrador",
-  }, Math.floor(Date.now() / 1000));
-  const req = {
-    get: () => `Bearer ${token}`,
-    requestId: "teste-request-id",
-  };
-  let chamado = false;
-  const res = {
-    status(codigo) { this.codigo = codigo; return this; },
-    json(corpo) { this.corpo = corpo; return this; },
-  };
-  autenticar(req, res, () => { chamado = true; });
-  assert.equal(chamado, true);
-  assert.equal(req.usuario.id_usuario, 7);
-  assert.equal(req.usuario.perfil, "administrador");
-
-  const invalido = { get: () => "Bearer token.invalido", requestId: "req" };
-  chamado = false;
-  autenticar(invalido, res, () => { chamado = true; });
-  assert.equal(chamado, false);
-  assert.equal(res.codigo, 401);
+test("valida assinatura, integridade e expiração do token bearer", () => {
+  const agora = Math.floor(Date.now() / 1000);
+  const token = emitirToken({ id_usuario: 7 }, agora);
+  assert.deepEqual(validarToken(token, agora + 1), { id_usuario: 7 });
+  assert.throws(() => validarToken(token + "x", agora + 1), { status: 401 });
+  assert.throws(() => validarToken(token, agora + 8 * 60 * 60), { status: 401 });
+  assert.throws(() => validarToken("token.invalido", agora), { status: 401 });
 });
