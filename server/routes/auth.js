@@ -1,7 +1,7 @@
 import { Router } from "express";
 import pool from "../db.js";
 import { HttpError } from "../erros.js";
-import { autenticar, emitirToken, verificarSenha } from "../auth.js";
+import { autenticar, emitirToken, verificarSenha, validarToken } from "../auth.js";
 
 const router = Router();
 const tentativasLogin = new Map();
@@ -63,8 +63,16 @@ router.post("/login", limitarTentativasLogin, async (req, res) => {
   }
   tentativasLogin.delete(req.chaveLimiteLogin);
 
+  const token = emitirToken(usuario);
+  const identidade = validarToken(token);
+  await pool.execute(
+    "INSERT INTO sessao_usuario (id_sessao, id_usuario, expira_em) " +
+    "VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 HOUR))",
+    [identidade.id_sessao, usuario.id_usuario]
+  );
+
   return res.json({
-    token: emitirToken(usuario),
+    token,
     tipo: "Bearer",
     expira_em: 28800,
     usuario: {
@@ -77,5 +85,23 @@ router.post("/login", limitarTentativasLogin, async (req, res) => {
 });
 
 router.get("/me", autenticar, (req, res) => res.json(req.usuario));
+
+router.post("/logout", autenticar, async (req, res) => {
+  await pool.execute(
+    "UPDATE sessao_usuario SET revogado_em = UTC_TIMESTAMP() " +
+    "WHERE id_sessao = ? AND revogado_em IS NULL",
+    [req.idSessao]
+  );
+  return res.status(204).end();
+});
+
+router.post("/logout-all", autenticar, async (req, res) => {
+  await pool.execute(
+    "UPDATE sessao_usuario SET revogado_em = UTC_TIMESTAMP() " +
+    "WHERE id_usuario = ? AND revogado_em IS NULL",
+    [req.usuario.id_usuario]
+  );
+  return res.status(204).end();
+});
 
 export default router;
