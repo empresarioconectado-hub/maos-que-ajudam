@@ -87,7 +87,7 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
 
   const exportacao = await fetch(base + "/api/relatorios/doacoes.csv");
   assert.equal(exportacao.status, 200);
-  assert.match(exportacao.headers.get("content-type"), /text\\/csv/);
+  assert.ok(exportacao.headers.get("content-type")?.includes("text/csv"));
   const csv = await exportacao.text();
   assert.match(csv, /'=2\\+2/);
 });
