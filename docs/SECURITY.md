@@ -22,7 +22,7 @@ O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente
 ## Limitações relevantes
 
 - Não há recuperação de senha, MFA ou revogação individual imediata de tokens já emitidos.
-- A auditoria ainda não associa cada evento ao usuário autenticado.
+- Tokens emitidos não possuem revogação individual; desativar a conta impede novas requisições autenticadas, mas não invalida tokens armazenados no cliente se a API estiver operando sem consultar o estado da conta.
 - O limitador de login é local ao processo e não compartilha estado entre instâncias.
 - Não há política CORS explícita por allowlist nem proteção distribuída contra abuso.
 - Não há implantação HTTPS, gestão de segredos em ambiente de produção ou monitoramento externo.
