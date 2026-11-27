@@ -36,16 +36,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Instalar cliente MariaDB
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mariadb-client
       - name: Instalar dependências
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Preparar banco de testes
         run: |
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot < database/schema.sql
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/seed.sql
+          DB_CONTAINER="$(docker ps -q --filter ancestor=mariadb:10.11 | head -n 1)"
+          test -n "$DB_CONTAINER"
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot < database/schema.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
         run: npm run prepare
       - name: Executar testes unitários e de integração
