@@ -41,10 +41,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mariadb-client
       - name: Instalar dependências
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Preparar banco de testes
         run: |
+          # A atividade exige que o schema possa ser executado mais de uma vez.
           mariadb --skip-ssl -h 127.0.0.1 -uroot -proot < database/schema.sql
+          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot < database/schema.sql
+          # A migração deve funcionar tanto em bases antigas quanto no schema atual.
+          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
+          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
           mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
         run: npm run prepare
