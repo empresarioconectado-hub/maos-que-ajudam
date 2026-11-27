@@ -82,6 +82,9 @@ router.post("/movimentacoes", exigirPerfil("administrador"), async (req, res) =>
     if (tipo === "saida" && saldoAtual < quantidade) {
       throw new HttpError(409, "Estoque insuficiente para esta saída");
     }
+    if (tipo === "entrada" && saldoAtual > MAX_INT - quantidade) {
+      throw new HttpError(409, "A entrada excede a capacidade numérica do estoque");
+    }
 
     const delta = tipo === "entrada" ? quantidade : -quantidade;
     const saldoNovo = saldoAtual + delta;
