@@ -62,6 +62,7 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   assert.equal(login.status, 200);
   assert.equal(login.body.usuario.perfil, "operador");
   token = login.body.token;
+  const tokenOperador = token;
   assert.ok(token);
 
   const perfil = await request("/api/auth/me");
@@ -190,4 +191,9 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   token = loginAdmin.body.token;
   const exclusaoComAdmin = await request(`/api/doadores/${idDoador}`, { method: "DELETE" });
   assert.equal(exclusaoComAdmin.status, 409);
+
+  await pool.execute("UPDATE usuario SET ativo = 0 WHERE email = ?", [emailOperador]);
+  token = tokenOperador;
+  const acessoContaInativa = await request("/api/doadores");
+  assert.equal(acessoContaInativa.status, 401);
 });
