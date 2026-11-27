@@ -22,7 +22,7 @@ test("valida assinatura e expiração do token bearer", () => {
     id_usuario: 7,
     email: "admin@exemplo.test",
     perfil: "administrador",
-  }, 2_000_000_000);
+  }, Math.floor(Date.now() / 1000));
   const req = {
     get: () => `Bearer ${token}`,
     requestId: "teste-request-id",
