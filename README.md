@@ -1,150 +1,289 @@
 # Mãos que Ajudam
 
-Projeto Integrador Extensionista II — API de apoio à ONG Mãos que Ajudam.
+Sistema web para organizar o cadastro de doadores, o catálogo de itens e o registro de doações de uma organização social. O projeto foi desenvolvido no contexto do Projeto Integrador Extensionista II (PIE II), com foco na aplicação prática de modelagem relacional, desenvolvimento web e integração entre frontend, API REST e banco de dados.
+
+## Visão geral
+
+A aplicação permite manter os dados dos doadores, consultar os itens disponíveis e registrar doações compostas por um ou mais itens. Cada registro mantém o vínculo com o doador e armazena as quantidades dos itens entregues.
+
+### Funcionalidades
+
+- Cadastro, consulta, edição e exclusão de doadores.
+- Consulta do catálogo de itens, organizado por categoria.
+- Registro de doações com data, observação opcional e múltiplos itens.
+- Histórico de doações com identificação do doador e detalhamento dos itens.
+- Indicadores com totais de doadores, itens e doações.
+- Validação de dados no servidor e tratamento padronizado de erros.
+- Verificação de disponibilidade da API e da conexão com o banco.
 
 ## Tecnologias
 
-- Node.js e Express 5
-- MySQL/MariaDB
-- mysql2 com consultas parametrizadas
-- Vite+ no frontend
+| Camada | Tecnologia |
+|---|---|
+| Interface | HTML, CSS e JavaScript |
+| Desenvolvimento e build | Vite+ |
+| API | Node.js e Express 5 |
+| Banco de dados | MariaDB / MySQL |
+| Acesso ao banco | mysql2/promise |
+| Configuração | dotenv |
+| Testes | Node.js Test Runner |
+| Integração contínua | GitHub Actions |
+| Contrato da API | OpenAPI 3.0.3 |
+
+## Arquitetura
+
+O projeto adota uma arquitetura simples em três camadas:
+
+1. **Frontend:** interface web responsável pela interação com o usuário.
+2. **Backend:** API REST responsável pelas regras de validação, operações e respostas HTTP.
+3. **Persistência:** banco relacional responsável pelo armazenamento e integridade dos dados.
+
+O frontend acessa a API por meio de requisições HTTP. Durante o desenvolvimento, o Vite encaminha as chamadas `/api` para o servidor Express.
+
+Consulte [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para o fluxo da aplicação e a organização dos diretórios.
+
+## Modelo de dados
+
+O banco utiliza cinco tabelas:
+
+- `doador`: dados cadastrais dos doadores.
+- `categoria`: classificação dos itens.
+- `item`: catálogo de itens disponíveis.
+- `doacao`: registro principal de cada doação.
+- `doacao_item`: tabela associativa que registra os itens e suas quantidades.
+
+Relacionamentos:
+
+- Um doador pode realizar várias doações (1:N).
+- Uma categoria pode agrupar vários itens (1:N).
+- Uma doação pode conter vários itens, e um item pode aparecer em várias doações (N:N), resolvido por `doacao_item`.
+
+O esquema utiliza chaves primárias, chaves estrangeiras, restrições de unicidade e verificação de quantidade positiva. A exclusão de doadores ou itens com histórico vinculado é restringida pelo banco.
+
+Detalhes: [docs/DATABASE.md](docs/DATABASE.md).
 
 ## Requisitos
 
-- Node.js 22 ou compatível com as dependências do projeto
-- npm
-- MySQL 8+ ou MariaDB 10.11+
-- Extensão REST Client no VS Code (opcional, para executar `api.http`)
+- Node.js 22.
+- npm.
+- MariaDB 10.11+ ou MySQL 8+.
+- Git.
+- Extensão REST Client no Visual Studio Code (opcional, para executar `api.http`).
 
-## Configuração
+## Instalação e execução local
 
-1. Instale as dependências:
+### 1. Obter o código e instalar dependências
 
-   ```bash
-   npm install
-   ```
+```bash
+git clone https://github.com/empresarioconectado-hub/maos-que-ajudam.git
+cd maos-que-ajudam
+npm install
+```
 
-   O comando instala `dotenv` e `mysql2` e atualiza o `package-lock.json` conforme o `package.json`.
+### 2. Criar o banco de dados
 
-2. Crie o banco e as tabelas em um banco novo:
+Com um usuário autorizado a criar bancos e tabelas, execute:
 
-   ```bash
-   mariadb -u root -p < database/schema.sql
-   ```
+```bash
+mariadb -u root -p < database/schema.sql
+```
 
-   O script usa `CREATE DATABASE IF NOT EXISTS` e `CREATE TABLE IF NOT EXISTS`; não contém DROP e não apaga registros. Ele é destinado à criação inicial, não substitui migrações para tabelas já existentes.
+O comando também pode ser executado pelo cliente MySQL. O script cria a estrutura caso ela ainda não exista e não contém comandos para apagar tabelas ou registros.
 
-3. (Opcional) Insira categorias e itens de demonstração:
+### 3. Carregar dados de demonstração (opcional)
 
-   ```bash
-   mariadb -u root -p < database/seed.sql
-   ```
+```bash
+mariadb -u root -p < database/seed.sql
+```
 
-4. Copie `.env.example` para `.env` e preencha as credenciais locais do MariaDB:
+O arquivo inclui categorias, itens e um doador fictício para facilitar a avaliação local. Os comandos foram preparados para evitar duplicações quando executados novamente.
 
-   ```bash
-   cp .env.example .env
-   ```
+### 4. Configurar variáveis de ambiente
 
-   Nunca envie o arquivo `.env` ao GitHub.
+Copie o modelo e edite as credenciais conforme sua instalação:
 
-5. Inicie a API:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   npm run api
-   ```
+Exemplo de configuração:
 
-6. Em outro terminal, inicie o frontend:
+```dotenv
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=maos_app
+DB_PASSWORD=sua_senha_local
+DB_NAME=maos_que_ajudam
+PORT=3000
+```
 
-   ```bash
-   npm run dev
-   ```
+Crie previamente o usuário do banco e conceda somente as permissões necessárias ao schema da aplicação. Não utilize credenciais administrativas em uma instalação compartilhada ou publicada.
 
-   Acesse http://localhost:5173. A API usa http://localhost:3000.
+**Importante:** o arquivo `.env` contém credenciais e não deve ser versionado. O repositório fornece apenas o modelo `.env.example`.
 
-## Interface web
+### 5. Iniciar a API
 
-O frontend disponibiliza uma interface responsiva em `http://localhost:5173` com:
-- Cadastro, listagem, edição e exclusão de doadores;
-- Consulta do catálogo de itens;
-- Registro de doações com seleção de múltiplos itens e quantidades;
-- Histórico de doações com identificação do doador e itens registrados;
-- Indicadores de quantidade de doadores, itens e doações.
+Em um terminal:
 
-A interface consome as rotas REST da API e apresenta mensagens para erros de validação e conflitos de integridade (por exemplo, tentativa de excluir doador com doação vinculada).
+```bash
+npm run api
+```
 
-## Modelo relacional
+Por padrão, a API ficará disponível em `http://localhost:3000`.
 
-- **doador 1:N doacao**: um doador pode realizar várias doações.
-- **categoria 1:N item**: cada item pertence a uma categoria.
-- **doacao N:N item**: relacionamento resolvido por `doacao_item`, que armazena a quantidade.
+Verifique a conexão:
 
-As chaves estrangeiras protegem a integridade referencial. O histórico impede excluir doadores vinculados a doações e itens vinculados a registros.
+```bash
+curl http://localhost:3000/api/health
+```
 
-## Endpoints
+A resposta esperada contém `status: "ok"` e `database: "connected"`.
 
-| Método | Rota | Finalidade |
+### 6. Iniciar o frontend
+
+Em outro terminal:
+
+```bash
+npm run dev
+```
+
+Acesse [http://localhost:5173](http://localhost:5173). O proxy configurado no Vite encaminha as chamadas `/api` para o backend local.
+
+## API REST
+
+A API utiliza JSON e está organizada pelos seguintes recursos:
+
+| Método | Endpoint | Descrição |
 |---|---|---|
-| GET | `/api/health` | Verificar API e banco |
-| GET | `/api/doadores` | Listar doadores |
-| GET | `/api/doadores/:id` | Consultar doador |
-| POST | `/api/doadores` | Cadastrar doador |
-| PUT | `/api/doadores/:id` | Atualizar doador |
-| DELETE | `/api/doadores/:id` | Excluir doador sem vínculos |
-| GET | `/api/itens` | Listar catálogo de itens |
-| GET | `/api/doacoes` | Listar doações com doador e itens |
-| POST | `/api/doacoes` | Registrar doação e seus itens |
+| GET | `/api/health` | Verifica a API e a conexão com o banco |
+| GET | `/api/doadores` | Lista os doadores |
+| GET | `/api/doadores/:id` | Consulta um doador |
+| POST | `/api/doadores` | Cadastra um doador |
+| PUT | `/api/doadores/:id` | Atualiza um doador |
+| DELETE | `/api/doadores/:id` | Exclui um doador sem vínculos |
+| GET | `/api/itens` | Lista itens e categorias |
+| GET | `/api/doacoes` | Lista doações com doador e itens |
+| POST | `/api/doacoes` | Registra uma doação e seus itens |
 
-### Exemplo de cadastro de doação
+### Exemplo: registrar uma doação
 
-```json
+```http
+POST /api/doacoes
+Content-Type: application/json
+
 {
   "id_doador": 1,
   "data_doacao": "2026-11-27",
-  "observacao": "Arrecadação da escola",
+  "observacao": "Arrecadação comunitária",
   "itens": [
     { "id_item": 1, "quantidade": 4 },
-    { "id_item": 4, "quantidade": 6 }
+    { "id_item": 4, "quantidade": 2 }
   ]
 }
 ```
 
-A rota de doações valida todos os dados e grava a doação e seus itens em uma única transação. Em caso de falha, executa ROLLBACK; em caso de sucesso, COMMIT.
+O registro principal e seus itens são gravados dentro de uma única transação. Se uma etapa falhar, a operação é revertida para evitar uma doação parcialmente persistida.
 
-## Validações e segurança
+O contrato completo está em [openapi.yaml](openapi.yaml). Os exemplos de requisições manuais estão em [api.http](api.http). Consulte [docs/API.md](docs/API.md) para formatos, códigos HTTP e exemplos adicionais.
 
-- Consultas SQL usam parâmetros `?`; valores recebidos nunca são concatenados ao SQL.
-- As consultas selecionam somente os campos necessários, sem `SELECT *`.
-- Validação no servidor para nome, e-mail, telefone, data, IDs, itens e quantidades.
-- E-mail duplicado retorna HTTP 409.
-- IDs e dados inválidos retornam HTTP 400.
-- Recursos inexistentes retornam HTTP 404.
-- Exclusões bloqueadas por chave estrangeira retornam HTTP 409.
-- Erros internos retornam mensagem genérica; detalhes técnicos ficam apenas no log do servidor.
-- O middleware centralizado trata JSON malformado, payload excessivo, erros de banco e rotas inexistentes.
+## Validação e tratamento de erros
 
-## Testes automatizados
+A API valida os dados recebidos antes de executar as operações no banco. As consultas utilizam parâmetros, e o tratamento centralizado evita expor detalhes internos ao cliente.
 
-Execute as validações de entrada sem precisar conectar ao banco:
+| Código HTTP | Uso |
+|---|---|
+| 200 | Consulta ou atualização concluída |
+| 201 | Recurso criado |
+| 204 | Exclusão concluída sem corpo de resposta |
+| 400 | Dados inválidos ou referência informada inválida |
+| 404 | Recurso ou rota não encontrado |
+| 409 | Conflito de unicidade ou exclusão impedida por vínculo |
+| 413 | Corpo da requisição acima do limite configurado |
+| 500 | Erro interno não tratado |
+
+## Testes e qualidade
+
+Execute os testes automatizados:
 
 ```bash
 npm test
 ```
 
-O conjunto cobre normalização de doadores, limites de campos, e-mail, data, itens repetidos e quantidades. A integração contínua executa os testes e gera o build do frontend a cada push ou pull request para `master`.
+Os testes atuais cobrem funções de validação e normalização de dados. Eles não substituem testes de integração com MariaDB nem testes de interface em navegador.
 
-## Testes manuais
+Para executar os cenários HTTP manualmente:
 
-Com a API em execução, abra `api.http` no VS Code com a extensão REST Client. Execute as requisições em sequência e ajuste os IDs conforme as respostas do banco. O arquivo inclui testes de CRUD, validação, integridade referencial e rollback.
+1. Inicie a API e o banco.
+2. Abra `api.http` no VS Code com a extensão REST Client.
+3. Execute as requisições na ordem indicada.
+4. Ajuste os IDs de doador e item conforme os dados existentes.
 
-## Contrato OpenAPI
+O arquivo inclui cenários para cadastro, atualização, exclusão, validação, conflito HTTP 409, referência inexistente e rollback de doação.
 
-O contrato da API está em `openapi.yaml` (OpenAPI 3.0.3), incluindo os endpoints de saúde, doadores, catálogo de itens e doações. Ele foi reconstruído com base na implementação atual da Atividade 2 porque o arquivo original do PIE I não estava presente no repositório. Se houver um contrato oficial anterior, compare-o e preserve eventuais convenções exigidas pela disciplina.
+### Integração contínua
 
-## Cenários HTTP 409
+O workflow em `.github/workflows/ci.yml` é executado em pushes e pull requests direcionados à branch `master`. Atualmente, instala as dependências, prepara o Vite+, executa os testes automatizados e gera o build do frontend.
 
-O arquivo `api.http` contém dois cenários explícitos:
-- Cadastro de doador com e-mail já utilizado (esperado HTTP 409).
-- Exclusão de doador que possui doação vinculada (esperado HTTP 409).
+## Estrutura do repositório
 
-Execute o primeiro após a requisição de cadastro com o mesmo e-mail. Para o segundo, ajuste o ID para um doador que realmente possua doação. O resultado depende dos dados existentes no banco.
+```text
+.
+├── .github/
+│   └── workflows/ci.yml
+├── database/
+│   ├── schema.sql
+│   └── seed.sql
+├── docs/
+│   ├── API.md
+│   ├── ARCHITECTURE.md
+│   ├── CONTRIBUTING.md
+│   ├── DATABASE.md
+│   └── SECURITY.md
+├── public/
+├── server/
+│   ├── routes/
+│   ├── db.js
+│   ├── erros.js
+│   ├── index.js
+│   └── validacao.js
+├── src/
+│   ├── main.js
+│   └── style.css
+├── tests/
+│   └── validacao.test.js
+├── .env.example
+├── api.http
+├── openapi.yaml
+├── package.json
+└── README.md
+```
+
+## Documentação complementar
+
+- [Arquitetura e organização do código](docs/ARCHITECTURE.md)
+- [Modelo e estrutura do banco de dados](docs/DATABASE.md)
+- [Referência de endpoints e exemplos](docs/API.md)
+- [Diretrizes de contribuição](docs/CONTRIBUTING.md)
+- [Política de segurança](docs/SECURITY.md)
+
+## Escopo e limitações conhecidas
+
+Esta versão é um projeto acadêmico funcional, voltado ao gerenciamento básico de doadores, catálogo e doações. Antes de utilizá-lo em produção, ainda seriam necessários, entre outros pontos:
+
+- Autenticação, autorização e gestão de perfis.
+- Proteção contra abuso, rate limiting e política de CORS adequada ao ambiente.
+- HTTPS, gestão segura de segredos e configuração de produção.
+- Migrações versionadas e estratégia de backup/restauração.
+- Testes automatizados de integração da API e testes ponta a ponta.
+- Monitoramento, logs estruturados e processo de implantação.
+- Revisão de privacidade e definição de retenção dos dados pessoais.
+
+Não há autenticação implementada nesta versão. A API não deve ser exposta publicamente nem utilizada para armazenar dados reais sensíveis sem os controles adicionais.
+
+## Contexto acadêmico
+
+Projeto desenvolvido como parte do Projeto Integrador Extensionista II (PIE II), no curso de Análise e Desenvolvimento de Sistemas. O repositório registra a implementação técnica e os artefatos de apoio à atividade, incluindo esquema SQL, carga de demonstração, API REST, contrato OpenAPI e testes.
+
+## Licença
+
+Nenhuma licença de distribuição foi definida neste repositório. Até que uma licença seja incluída, todos os direitos permanecem reservados aos respectivos titulares.
