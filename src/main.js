@@ -1,9 +1,9 @@
 import "./style.css";
 
 const app = document.querySelector("#app");
-const state = { doadores: [], itens: [], doacoes: [], editando: null, itemSelecionado: [] };
+const state = { doadores: [], itens: [], doacoes: [], editando: null, itemSelecionado: [], aba: "doadores" };
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = () => { const data = new Date(); const ano = data.getFullYear(); const mes = String(data.getMonth() + 1).padStart(2, "0"); const dia = String(data.getDate()).padStart(2, "0"); return `${ano}-${mes}-${dia}`; };
 const esc = (valor = "") => String(valor).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]);
 const api = async (rota, opcoes = {}) => {
   const resposta = await fetch(rota, { ...opcoes, headers: { "Content-Type":"application/json", ...(opcoes.headers || {}) } });
@@ -39,8 +39,8 @@ function render() {
         <article><span>Itens no catálogo</span><strong>${state.itens.length}</strong></article>
         <article><span>Doações registradas</span><strong>${state.doacoes.length}</strong></article>
       </section>
-      <nav class="abas"><button class="aba ativa" data-aba="doadores">Doadores</button><button class="aba" data-aba="doacoes">Doações</button><button class="aba" data-aba="catalogo">Catálogo de itens</button></nav>
-      <section id="painel-doadores" class="painel">
+      <nav class="abas"><button class="aba ${state.aba === "doadores" ? "ativa" : ""}" data-aba="doadores" aria-selected="${state.aba === "doadores"}">Doadores</button><button class="aba ${state.aba === "doacoes" ? "ativa" : ""}" data-aba="doacoes" aria-selected="${state.aba === "doacoes"}">Doações</button><button class="aba ${state.aba === "catalogo" ? "ativa" : ""}" data-aba="catalogo" aria-selected="${state.aba === "catalogo"}">Catálogo de itens</button></nav>
+      <section id="painel-doadores" class="painel" ${state.aba !== "doadores" ? "hidden" : ""}>
         <div class="cabecalho-secao"><div><h2>Doadores</h2><p>Cadastre e mantenha os dados dos doadores.</p></div><button class="botao secundario" id="atualizar">Atualizar dados</button></div>
         <form id="form-doador" class="formulario">
           <label>Nome completo<input name="nome" maxlength="150" required placeholder="Nome do doador"></label>
@@ -52,7 +52,7 @@ function render() {
         ${state.doadores.map(d => `<tr><td>${d.id_doador}</td><td>${esc(d.nome)}</td><td>${esc(d.email || "—")}</td><td>${esc(d.telefone || "—")}</td><td>${esc(d.data_cadastro || "—")}</td><td class="acoes-tabela"><button class="link" data-editar="${d.id_doador}">Editar</button><button class="link perigo" data-excluir="${d.id_doador}">Excluir</button></td></tr>`).join("") || '<tr><td colspan="6" class="vazio">Nenhum doador cadastrado.</td></tr>'}
         </tbody></table></div>
       </section>
-      <section id="painel-doacoes" class="painel" hidden>
+      <section id="painel-doacoes" class="painel" ${state.aba !== "doacoes" ? "hidden" : ""}>
         <div class="cabecalho-secao"><div><h2>Registrar doação</h2><p>Associe um doador a um ou mais itens do catálogo.</p></div></div>
         <form id="form-doacao" class="formulario">
           <label>Doador<select name="id_doador" required><option value="">Selecione um doador</option>${state.doadores.map(d=>`<option value="${d.id_doador}">${esc(d.nome)}</option>`).join("")}</select></label>
@@ -64,10 +64,10 @@ function render() {
         <div class="cabecalho-secao historico-titulo"><div><h2>Histórico de doações</h2><p>Registros armazenados no banco de dados.</p></div></div>
         <div class="historico">${state.doacoes.map(d=>`<article class="doacao"><div><strong>Doação #${d.id_doacao}</strong><span>${esc(d.data_doacao)} · ${esc(d.doador?.nome || "Doador")}</span>${d.observacao ? `<p>${esc(d.observacao)}</p>` : ""}</div><ul>${(d.itens || []).map(i=>`<li>${esc(i.nome)}: ${i.quantidade} ${esc(i.unidade)}</li>`).join("") || "<li>Sem itens</li>"}</ul></article>`).join("") || '<p class="vazio">Nenhuma doação registrada.</p>'}</div>
       </section>
-      <section id="painel-catalogo" class="painel" hidden><div class="cabecalho-secao"><div><h2>Catálogo de itens</h2><p>Itens disponíveis para compor uma doação.</p></div></div><div class="grade-itens">${state.itens.map(i=>`<article class="item-card"><span>${esc(i.categoria)}</span><h3>${esc(i.nome)}</h3><p>Unidade: ${esc(i.unidade)}</p><small>Código #${i.id_item}</small></article>`).join("") || '<p class="vazio">Nenhum item cadastrado no catálogo.</p>'}</div></section>
+      <section id="painel-catalogo" class="painel" ${state.aba !== "catalogo" ? "hidden" : ""}><div class="cabecalho-secao"><div><h2>Catálogo de itens</h2><p>Itens disponíveis para compor uma doação.</p></div></div><div class="grade-itens">${state.itens.map(i=>`<article class="item-card"><span>${esc(i.categoria)}</span><h3>${esc(i.nome)}</h3><p>Unidade: ${esc(i.unidade)}</p><small>Código #${i.id_item}</small></article>`).join("") || '<p class="vazio">Nenhum item cadastrado no catálogo.</p>'}</div></section>
       <footer>Projeto Integrador Extensionista II · Mãos que Ajudam</footer>
     </main>`;
-  app.querySelectorAll("[data-aba]").forEach(b=>b.addEventListener("click",()=>{app.querySelectorAll(".aba").forEach(x=>x.classList.toggle("ativa",x===b));["doadores","doacoes","catalogo"].forEach(n=>document.querySelector("#painel-"+n).hidden=n!==b.dataset.aba);}));
+  app.querySelectorAll("[data-aba]").forEach(b=>b.addEventListener("click",()=>{state.aba=b.dataset.aba;app.querySelectorAll(".aba").forEach(x=>{x.classList.toggle("ativa",x===b);x.setAttribute("aria-selected",String(x===b));});["doadores","doacoes","catalogo"].forEach(n=>document.querySelector("#painel-"+n).hidden=n!==state.aba);}));
   document.querySelector("#atualizar").addEventListener("click",()=>carregar().catch(e=>aviso(e.message,"erro")));
   document.querySelector("#form-doador").addEventListener("submit", salvarDoador);
   document.querySelector("#cancelar-edicao").addEventListener("click",()=>{resetFormulario();});
