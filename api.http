@@ -111,3 +111,32 @@ Content-Type: application/json
 
 ### Teste de rota inexistente (esperado 404 em JSON)
 GET {{baseUrl}}/api/rota-inexistente
+
+
+### Consultar estoque atual
+GET {{baseUrl}}/api/estoque
+
+### Consultar movimentações recentes
+GET {{baseUrl}}/api/estoque/movimentacoes?limit=50
+
+### Confirmar recebimento da doação (substitua o ID)
+PATCH {{baseUrl}}/api/doacoes/1/status
+Content-Type: application/json
+
+{
+  "status": "recebida"
+}
+
+### Confirmar distribuição (requer recebimento anterior e saldo disponível)
+PATCH {{baseUrl}}/api/doacoes/1/status
+Content-Type: application/json
+
+{
+  "status": "distribuida"
+}
+
+### Consultar indicadores gerenciais
+GET {{baseUrl}}/api/relatorios/resumo
+
+### Exportar histórico em CSV
+GET {{baseUrl}}/api/relatorios/doacoes.csv
