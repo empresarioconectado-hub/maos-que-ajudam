@@ -100,7 +100,7 @@ Carregue os dados fictícios, se necessário:
 mariadb -u root -p < database/seed.sql
 ```
 
-O script de carga utiliza inserções que evitam duplicar categorias, doador de demonstração e itens quando executado novamente.
+O script de carga utiliza inserções que evitam duplicar categorias, doador de demonstração, itens e linhas iniciais de estoque quando executado novamente.
 
 ## Configuração de acesso
 
