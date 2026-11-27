@@ -18,7 +18,10 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 - Verificações de liveness e readiness da API.
 - Login com senha protegida por scrypt e token Bearer com expiração de 8 horas.
 - Perfis de administrador e operador, com exclusão de doadores restrita ao administrador.
-- Limitação de tentativas de login.
+- Limitação de tentativas de login por processo.
+- Sessões persistidas e revogáveis; logout individual e encerramento de todas as sessões da conta.
+- CORS por allowlist, cabeçalhos defensivos e opções explícitas de HSTS/proxy reverso.
+- Scripts de backup e restauração do MariaDB/MySQL, com validação do arquivo e confirmação para restauração.
 - Identificador de requisição para rastrear erros.
 
 ## Tecnologias
@@ -97,6 +100,8 @@ mariadb -u root -p < database/seed.sql
 | GET | `/api/health/ready` | Readiness do banco |
 | POST | `/api/auth/login` | Autenticação e emissão de token |
 | GET | `/api/auth/me` | Dados da conta autenticada |
+| POST | `/api/auth/logout` | Revoga a sessão atual |
+| POST | `/api/auth/logout-all` | Revoga todas as sessões da conta |
 | GET/POST | `/api/doadores` | Listagem e cadastro |
 | GET/PUT/DELETE | `/api/doadores/:id` | Consulta, edição e exclusão |
 | GET | `/api/itens` | Catálogo |
@@ -125,7 +130,7 @@ Os testes cobrem hash de senhas, assinatura e expiração de tokens, validaçõe
 
 ## Banco de dados
 
-O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas e perfis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem, [a migração 002](database/migrations/002_gestao_operacional.sql) e [a migração 003](database/migrations/003_autenticacao.sql) e [a migração 004](database/migrations/004_limite_minimo_estoque.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
+O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas e perfis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem, [a migração 002](database/migrations/002_gestao_operacional.sql) e [a migração 003](database/migrations/003_autenticacao.sql)  [a migração 004](database/migrations/004_limite_minimo_estoque.sql) e [a migração 005](database/migrations/005_sessoes_revogaveis.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
 
 ## Documentação
 
@@ -134,12 +139,13 @@ O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `
 - [Banco de dados](docs/DATABASE.md)
 - [Contribuição](docs/CONTRIBUTING.md)
 - [Segurança](docs/SECURITY.md)
+- [Operação, backup e recuperação](docs/OPERATIONS.md)
 
 ## Segurança e limitações
 
 A autenticação utiliza tokens Bearer assinados com `AUTH_SECRET`, senhas derivadas por scrypt e perfis de acesso. A trilha de auditoria registra criação e transições de status vinculadas à conta autenticada que executou a operação. As migrações são SQL versionadas e reexecutáveis, mas ainda não há um gerenciador automatizado de migrações. Os cabeçalhos HTTP e identificadores de requisição são medidas básicas, não uma certificação de segurança.
 
-A autenticação implementada é uma base para o projeto, não uma certificação de segurança. Antes de produção, configure HTTPS, CORS por allowlist, rate limiting distribuído, rotação de segredos, backups testados, monitoramento, política de sessão e revisão de privacidade/LGPD. O limitador de login atual é em memória e não substitui proteção distribuída. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
+A autenticação implementada é uma base para o projeto, não uma certificação de segurança. As sessões agora são persistidas e podem ser revogadas individualmente ou em conjunto. Ainda faltam MFA, recuperação de senha, rate limiting distribuído, E2E em navegador, implantação HTTPS, monitoramento externo e configuração de backup agendado em armazenamento independente. Os scripts de backup/restauração estão disponíveis, mas precisam ser agendados e testados no ambiente de implantação. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
 
 ## Contexto
 
