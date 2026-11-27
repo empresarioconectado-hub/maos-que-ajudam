@@ -1,67 +1,53 @@
 # Referência da API
 
-## Informações gerais
-
-- Base URL local: `http://localhost:3000`
-- Formato de entrada: JSON
-- Formato de saída: JSON, exceto respostas HTTP 204
-- Contrato: `openapi.yaml` (OpenAPI 3.0.3)
-
-A API não possui autenticação nesta versão. Deve ser utilizada somente em ambiente local ou controlado.
+A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`.
 
 ## Saúde
 
-### `GET /api/health`
-
-Verifica a disponibilidade da API e executa uma consulta simples no banco.
-
-Resposta `200`:
-
-```json
-{
-  "status": "ok",
-  "database": "connected",
-  "timestamp": "2026-11-27T12:00:00.000Z"
-}
-```
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/health/live` | Confirma que o processo está ativo, sem consultar o banco |
+| GET | `/api/health/ready` | Verifica a disponibilidade do banco |
+| GET | `/api/health` | Retorna o estado da API, banco e horário |
 
 ## Doadores
 
-### `GET /api/doadores`
+Os endpoints de consulta, cadastro, atualização e exclusão permanecem compatíveis com o contrato anterior.
 
-Retorna a lista de doadores, ordenada pelo nome.
+### Listagem simples
 
-### `GET /api/doadores/{id}`
+`GET /api/doadores` retorna um array, preservando a resposta utilizada pela interface atual.
 
-Retorna um doador. O identificador deve ser um inteiro positivo.
+### Pesquisa e paginação
 
-### `POST /api/doadores`
+`GET /api/doadores?page=1&limit=20&q=ana`
 
-Cadastra um doador.
-
-Corpo:
+Quando `page` ou `limit` é informado, ou quando existe o parâmetro `q`, a resposta passa a ser:
 
 ```json
 {
-  "nome": "Ana Souza",
-  "email": "ana@example.com",
-  "telefone": "11999999999"
+  "data": [
+    {
+      "id_doador": 1,
+      "nome": "Ana Souza",
+      "email": "ana@example.com",
+      "telefone": null,
+      "data_cadastro": "2026-11-27 10:00:00"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1
+  }
 }
 ```
 
-O nome é obrigatório. E-mail e telefone são opcionais e podem ser enviados como texto vazio conforme a normalização da aplicação. O e-mail, quando informado, deve respeitar o formato esperado e não pode estar cadastrado em outro registro.
-
-Resposta de sucesso: `201 Created`, com o objeto do doador criado.
-
-### `PUT /api/doadores/{id}`
-
-Atualiza os dados cadastrais do doador. O corpo segue o mesmo formato do cadastro. Retorna `200 OK` com o registro atualizado.
-
-### `DELETE /api/doadores/{id}`
-
-Exclui o doador quando não existem doações associadas.
-
-Resposta de sucesso: `204 No Content`. Se houver doações vinculadas, a exclusão é bloqueada e a API retorna `409 Conflict`.
+- `page`: página iniciada em 1; padrão 1.
+- `limit`: registros por página; padrão 20 e máximo 100.
+- `q`: pesquisa parcial por nome, e-mail ou telefone; máximo 100 caracteres.
+- Parâmetros inválidos retornam `400`.
 
 ## Itens
 
@@ -69,103 +55,38 @@ Resposta de sucesso: `204 No Content`. Se houver doações vinculadas, a exclus�
 
 Retorna o catálogo ordenado por categoria e nome.
 
-Exemplo de resposta:
-
-```json
-[
-  {
-    "id_item": 1,
-    "nome": "Arroz 5 kg",
-    "unidade": "pacote",
-    "id_categoria": 1,
-    "categoria": "Alimento"
-  }
-]
-```
-
 ## Doações
 
 ### `GET /api/doacoes`
 
-Retorna doações com dados resumidos do doador e lista de itens.
-
-Exemplo:
-
-```json
-[
-  {
-    "id_doacao": 12,
-    "data_doacao": "2026-11-27",
-    "observacao": "Arrecadação comunitária",
-    "doador": {
-      "id_doador": 1,
-      "nome": "Ana Souza"
-    },
-    "itens": [
-      {
-        "id_item": 1,
-        "nome": "Arroz 5 kg",
-        "quantidade": 4,
-        "unidade": "pacote"
-      }
-    ]
-  }
-]
-```
+Retorna doações com os dados resumidos do doador e seus itens.
 
 ### `POST /api/doacoes`
 
-Registra uma doação e seus itens em uma única transação.
+Registra uma doação e os respectivos itens em uma transação. O banco confirma toda a operação ou reverte as alterações em caso de falha.
 
-Corpo:
+## Erros e rastreabilidade
 
-```json
-{
-  "id_doador": 1,
-  "data_doacao": "2026-11-27",
-  "observacao": "Arrecadação comunitária",
-  "itens": [
-    { "id_item": 1, "quantidade": 4 },
-    { "id_item": 4, "quantidade": 2 }
-  ]
-}
-```
-
-Regras principais:
-
-- O doador deve existir.
-- A data deve ser válida.
-- A lista de itens deve conter pelo menos um item.
-- Cada item deve existir no catálogo.
-- Cada quantidade deve ser um inteiro positivo.
-- Um mesmo item não deve aparecer mais de uma vez na lista.
-
-Resposta de sucesso: `201 Created`.
+As respostas de erro seguem o formato:
 
 ```json
 {
-  "mensagem": "Doação registrada com sucesso",
-  "id_doacao": 12
+  "erro": "Descrição destinada ao cliente",
+  "requestId": "identificador-da-requisicao"
 }
 ```
 
-Se uma referência não existir ou uma inserção falhar, a transação é revertida.
+O identificador também é enviado no cabeçalho `X-Request-Id` e permite correlacionar a resposta com os registros do servidor. Detalhes internos, SQL, credenciais e stack traces não são enviados ao cliente.
 
-## Códigos HTTP
-
-| Código | Significado no projeto |
+| Código | Significado |
 |---|---|
 | 200 | Consulta ou atualização concluída |
 | 201 | Registro criado |
 | 204 | Exclusão concluída, sem corpo |
-| 400 | Entrada inválida ou referência informada não encontrada no registro da doação |
+| 400 | Entrada inválida |
 | 404 | Recurso ou rota não encontrado |
-| 409 | Duplicidade ou conflito de integridade |
-| 413 | Corpo da requisição excedeu 100 KB |
-| 500 | Falha interna não prevista |
+| 409 | Conflito de integridade ou duplicidade |
+| 413 | Corpo acima do limite de 100 KB |
+| 500 | Falha interna |
 
-As respostas de erro são objetos JSON com a propriedade `erro`. A mensagem é destinada ao cliente e não deve conter SQL, credenciais ou stack trace.
-
-## Testes manuais
-
-O arquivo `api.http` contém exemplos executáveis com a extensão REST Client do VS Code. Alguns cenários dependem dos dados presentes no banco; ajuste os IDs antes da execução.
+O arquivo `openapi.yaml` contém o contrato OpenAPI disponível. `api.http` reúne requisições para testes manuais.
