@@ -48,11 +48,14 @@ router.get("/", async (req, res) => {
 
   if (paginacao.possuiPaginacao) {
     const [[{ total }]] = await pool.execute("SELECT COUNT(*) AS total FROM doacao");
-    [rows] = await pool.execute(
-      SELECT_DOACOES +
-      "WHERE d.id_doacao IN (" +
+    const consultaPaginada = SELECT_DOACOES.replace(
+      "FROM doacao d ",
+      "FROM doacao d INNER JOIN (" +
       "SELECT id_doacao FROM doacao ORDER BY data_doacao DESC, id_doacao DESC LIMIT ? OFFSET ?" +
-      ") ORDER BY d.data_doacao DESC, d.id_doacao DESC, i.nome ASC",
+      ") pagina ON pagina.id_doacao = d.id_doacao "
+    );
+    [rows] = await pool.execute(
+      consultaPaginada + "ORDER BY d.data_doacao DESC, d.id_doacao DESC, i.nome ASC",
       [paginacao.limit, paginacao.offset]
     );
     return res.json({
