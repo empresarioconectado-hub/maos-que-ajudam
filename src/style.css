@@ -33,3 +33,14 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:720px){.acoes-conta{align-items:flex-end;flex-direction:column}.topo{align-items:center}.login-card{padding:24px}}
 
 .acoes-relatorio{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+
+.formularios-estoque{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}
+.formularios-estoque .formulario{border:1px solid #e1eae3;border-radius:12px;padding:16px;display:grid;gap:12px}
+.formularios-estoque h3{margin:0;color:#244b39;font-size:15px}
+.formularios-estoque label{display:grid;gap:6px;color:#53645a;font-size:12px;font-weight:650}
+.formularios-estoque input,.formularios-estoque select{width:100%;min-width:0;border:1px solid #d7e2db;border-radius:8px;padding:10px;font:inherit;background:#fff}
+.formularios-estoque .ajuda{font-size:12px;color:#718078;margin:0}
+.alerta-estoque{display:inline-block;padding:4px 8px;border-radius:20px;background:#fff1df;color:#9a4b00;font-size:11px;font-weight:700}
+.normal-estoque{color:#397456;font-size:12px}
+@media(max-width:720px){.formularios-estoque{grid-template-columns:1fr}}
