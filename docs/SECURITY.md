@@ -1,55 +1,73 @@
 # Segurança
 
-## Situação atual
+## Classificação e uso previsto
 
-O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente nem utilizado com dados pessoais reais. A API exige token Bearer para os recursos de negócio. O login utiliza hash de senha scrypt, tokens assinados por HMAC-SHA-256 com expiração de oito horas e perfis `administrador` e `operador`. A exclusão de doadores é restrita ao administrador.
+O Mãos que Ajudam é um projeto acadêmico e uma base de desenvolvimento. Não está certificado, não passou por pentest independente e não deve ser exposto publicamente nem receber dados pessoais reais antes de uma avaliação de segurança, privacidade e operação.
 
-## Controles implementados
+## Controles implementados no repositório
 
-- Consultas SQL parametrizadas e validação de entradas no backend.
-- Limite de 100 KB para corpos JSON.
-- Cabeçalhos básicos de proteção HTTP e identificador de requisição.
-- Tratamento centralizado de erros sem exposição de SQL ou stack trace ao cliente.
-- Integridade referencial e restrições no banco.
-- Transações para registro de doação e atualização conjunta de status, estoque, movimentações e auditoria.
-- Validação de transições de status e bloqueio de saldo negativo.
-- Ajustes manuais e configuração de limites de estoque restritos a administradores, com auditoria.
-- Neutralização de conteúdo perigoso na exportação CSV para reduzir CSV Injection.
-- Auditoria de criação e transições de doações, ajustes manuais de estoque e configuração de limites mínimos, vinculada à conta autenticada.
-- Limitação em memória de tentativas de login por endereço IP.
-- Segredo de assinatura obrigatório na inicialização, com tamanho mínimo de 32 bytes.
-- Provisionamento inicial de contas por comando administrativo, sem senha padrão.
+- Senhas armazenadas com derivação scrypt e salt aleatório.
+- Tokens Bearer assinados com HMAC-SHA-256, expiração de oito horas e identificador único de sessão.
+- Sessões persistidas no banco; logout revoga a sessão atual e `POST /api/auth/logout-all` revoga todas as sessões ativas da conta.
+- Conta e perfil revalidados no banco em cada requisição protegida.
+- Perfis `administrador` e `operador`, com operações sensíveis restritas.
+- Consultas SQL parametrizadas, validação de entrada e limites de tamanho do corpo JSON.
+- Cabeçalhos de segurança para respostas da API, incluindo CSP restritiva para conteúdo de API, proteção contra MIME sniffing, clickjacking e política de referenciador.
+- CORS por allowlist configurável em `CORS_ORIGINS`; chamadas sem cabeçalho Origin continuam permitidas para uso same-origin e clientes HTTP.
+- HSTS opcional por `ENABLE_HSTS=1`, somente quando a aplicação estiver atrás de proxy HTTPS confiável.
+- Identificador de requisição `X-Request-Id` e tratamento centralizado de erros.
+- Auditoria de operações de negócio e transações para alterações de estoque/doações.
+- Scripts de backup validado e restauração com confirmação explícita.
+- CI com testes, banco MariaDB, reexecução de schema/migrações e build.
 
-## Limitações relevantes
+## Sessões e autenticação
 
-- Não há recuperação de senha ou MFA.
-- A auditoria registra a conta que executou a operação, mas não registra endereço IP nem agente do usuário.
-- Tokens são validados contra o estado atual da conta em cada requisição; não há logout ou revogação individual por token.
-- O limitador de login é local ao processo e não compartilha estado entre instâncias.
-- O token do navegador fica em `sessionStorage`; um XSS bem-sucedido pode acessá-lo, portanto CSP e revisão da interface são necessárias.
-- Não há política CORS explícita por allowlist nem proteção distribuída contra abuso.
-- Não há implantação HTTPS, gestão de segredos em ambiente de produção ou monitoramento externo.
-- A adequação à LGPD depende de definição institucional de finalidade, base legal, retenção, transparência e atendimento aos titulares.
+Cada login cria uma linha em `sessao_usuario`. O identificador da sessão é incluído no token assinado e validado contra o banco em toda requisição protegida. Revogar a sessão invalida o token imediatamente, mesmo antes das oito horas de expiração. Sessões expiradas podem ser removidas periodicamente após o prazo definido pela política de retenção.
 
-## Cuidados para desenvolvimento
+O endpoint `POST /api/auth/logout` revoga a sessão apresentada. `POST /api/auth/logout-all` encerra todas as sessões da conta. O frontend executa a revogação no logout normal e também limpa o token local se a API estiver indisponível.
 
-- Mantenha `.env` fora do controle de versão.
-- Utilize usuário de banco exclusivo e com privilégios mínimos.
-- Utilize dados fictícios.
-- Não publique a API diretamente na internet.
-- Faça backup antes de executar migrações.
-- Não compartilhe credenciais ou dados pessoais em issues.
+## Limitações ainda existentes
 
-## Requisitos antes de produção
+- O limitador de tentativas de login é mantido em memória por processo. Em implantação com múltiplas instâncias, deve ser substituído por mecanismo compartilhado (por exemplo Redis ou tabela transacional no banco) e protegido também no proxy/WAF.
+- Não há MFA, recuperação de senha por e-mail ou fluxo self-service de redefinição.
+- O token do navegador permanece em `sessionStorage`; XSS pode acessá-lo. CSP da API não substitui CSP no servidor que entrega o frontend. A hospedagem do frontend deve enviar sua própria CSP, preferencialmente com nonce/hash e sem `unsafe-inline`.
+- Não há HTTPS configurado pelo código: certificado, redirecionamento HTTP→HTTPS, renovação TLS e HSTS dependem do domínio/proxy/hospedagem.
+- CORS precisa ser configurado com os domínios reais do frontend. Não habilite curingas para uma aplicação autenticada.
+- Ainda não há testes E2E com navegador real, análise DAST ou pentest independente.
+- Backup e restauração possuem scripts, mas o agendamento, armazenamento externo, criptografia em repouso, alertas e testes regulares precisam ser configurados no ambiente operacional.
+- Não há monitoramento externo ou gestão centralizada de logs.
+- A adequação à LGPD depende de decisões institucionais e jurídicas sobre finalidade, base legal, minimização, transparência, retenção, descarte e atendimento aos titulares.
 
-1. Adicionar MFA e política de revogação de tokens/sessões.
-2. Avaliar o registro de endereço IP e agente do usuário na auditoria, com minimização e retenção compatíveis com a LGPD.
-3. Configurar HTTPS, CORS por allowlist e rate limiting distribuído.
-4. Utilizar gestão segura e rotação de segredos.
-5. Implementar backup automatizado e testar restauração.
-6. Configurar monitoramento e alertas.
-7. Realizar análise de dependências e testes de segurança.
-8. Formalizar os procedimentos de privacidade e LGPD.
+## Configuração recomendada
+
+Gere um segredo exclusivo para cada ambiente:
+
+```bash
+openssl rand -hex 32
+```
+
+Configure no ambiente, nunca no Git:
+
+```dotenv
+AUTH_SECRET=valor-aleatorio-com-pelo-menos-32-bytes
+CORS_ORIGINS=https://app.exemplo.org
+TRUST_PROXY=1
+ENABLE_HSTS=1
+```
+
+Ative `TRUST_PROXY=1` somente quando houver proxy reverso conhecido e corretamente configurado. Ative HSTS apenas depois de HTTPS estar funcionando para o domínio e subdomínios cobertos.
+
+## Requisitos obrigatórios antes de produção
+
+1. Implantar frontend e API em domínio controlado, com TLS, redirecionamento HTTPS e CSP no servidor do frontend.
+2. Definir CORS com a origem exata do frontend e revisar a confiança no proxy.
+3. Substituir o limitador em memória por solução distribuída e configurar WAF/rate limit no perímetro.
+4. Implementar MFA e recuperação de senha com canal de entrega seguro, tokens de uso único, expiração e auditoria.
+5. Definir armazenamento externo, criptografia, retenção e agendamento dos backups; realizar exercícios de restauração documentados.
+6. Configurar monitoramento externo, alertas, retenção de logs e resposta a incidentes.
+7. Executar E2E, SAST/DAST, análise de dependências e pentest independente.
+8. Formalizar inventário de dados, finalidade, base legal, aviso de privacidade, retenção, descarte e processo de atendimento aos titulares.
+9. Revisar privilégios do banco, gestão/rotação de segredos, política de acesso administrativo e segregação de ambientes.
 
 ## Comunicação de vulnerabilidades
 
