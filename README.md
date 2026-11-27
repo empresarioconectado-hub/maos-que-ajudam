@@ -14,6 +14,7 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 - Trilha de auditoria para criação e alteração de status das doações.
 - Dashboard com indicadores operacionais.
 - Exportação do histórico em CSV.
+- Comprovante de doação pronto para impressão ou salvamento em PDF pelo navegador.
 - Validação de dados no backend e transação para registrar doações.
 - Verificações de liveness e readiness da API.
 - Identificador de requisição para rastrear erros.
