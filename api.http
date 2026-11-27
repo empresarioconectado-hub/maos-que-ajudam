@@ -146,6 +146,39 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/api/estoque/movimentacoes?limit=50
 Authorization: Bearer {{token}}
 
+### Ajuste manual de entrada no estoque (somente administrador)
+POST {{baseUrl}}/api/estoque/movimentacoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_item": 1,
+  "tipo": "entrada",
+  "quantidade": 5,
+  "observacao": "Reposição inicial"
+}
+
+### Ajuste manual de saída no estoque (somente administrador)
+POST {{baseUrl}}/api/estoque/movimentacoes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_item": 1,
+  "tipo": "saida",
+  "quantidade": 2,
+  "observacao": "Correção de inventário"
+}
+
+### Definir limite mínimo para alerta (somente administrador)
+PATCH {{baseUrl}}/api/estoque/1/limite-minimo
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantidade_minima": 10
+}
+
 ### Confirmar recebimento da doação (substitua o ID)
 PATCH {{baseUrl}}/api/doacoes/1/status
 Authorization: Bearer {{token}}
