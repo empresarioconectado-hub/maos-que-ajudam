@@ -89,7 +89,7 @@ Registra uma doação e os respectivos itens em uma transação. O banco confirm
 - `GET /api/relatorios/resumo`: indicadores agregados para o painel.
 - `GET /api/relatorios/doacoes.csv`: exportação CSV com neutralização de conteúdo que poderia ser interpretado como fórmula em planilhas.
 
-O relatório em PDF é gerado pela interface por meio da impressão do navegador; na janela de impressão, selecione “Salvar como PDF”.
+O relatório em PDF é gerado pela interface por meio da impressão do navegador; na janela de impressão, selecione “Salvar como PDF”. O comprovante individual também pode ser impresso ou salvo em PDF; o arquivo é gerado no navegador, não no servidor.
 
 ## Erros e rastreabilidade
 
@@ -120,17 +120,6 @@ O identificador também é enviado no cabeçalho `X-Request-Id` e permite correl
 
 O arquivo `openapi.yaml` contém o contrato OpenAPI disponível. `api.http` reúne requisições para testes manuais.
 
-
-## Gestão de estoque
-
-### `GET /api/estoque`
-
-Lista os itens do catálogo e seus saldos atuais. Itens ainda sem movimentação são apresentados com saldo zero.
-
-### `GET /api/estoque/movimentacoes?limit=50`
-
-Lista as movimentações mais recentes. O parâmetro `limit` aceita valores inteiros entre 1 e 200.
-
 ## Ciclo de vida das doações
 
 ### `PATCH /api/doacoes/{id}/status`
@@ -148,10 +137,3 @@ Transições aceitas:
 - `recebida → distribuida`: baixa do estoque as quantidades da doação.
 
 Transições fora dessas regras retornam HTTP 409. A distribuição também retorna 409 se algum item não possuir saldo suficiente. Atualização do status, saldo, movimentação e auditoria são executados na mesma transação.
-
-## Relatórios
-
-- `GET /api/relatorios/resumo`: indicadores gerais e quantidades por status.
-- `GET /api/relatorios/doacoes.csv`: exportação CSV do histórico de doações e itens.
-
-A exportação neutraliza prefixos de fórmulas em campos textuais para reduzir o risco de CSV Injection em planilhas. O histórico de doações também oferece comprovante para impressão pelo navegador, com opção de salvar como PDF no diálogo de impressão. Esse recurso não gera um arquivo PDF no servidor.
