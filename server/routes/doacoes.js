@@ -67,8 +67,8 @@ router.post("/", async (req, res) => {
     }
 
     await conexao.execute(
-      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes) VALUES ('doacao', ?, 'criada', ?)",
-      [idDoacao, JSON.stringify({ id_doador, quantidade_itens: itens.length })]
+      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes, id_usuario) VALUES ('doacao', ?, 'criada', ?, ?)",
+      [idDoacao, JSON.stringify({ id_doador, quantidade_itens: itens.length }), req.usuario.id_usuario]
     );
     await conexao.commit();
     iniciou = false;
@@ -147,8 +147,8 @@ router.patch("/:id/status", async (req, res) => {
 
     await conexao.execute("UPDATE doacao SET status = ? WHERE id_doacao = ?", [status, id]);
     await conexao.execute(
-      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes) VALUES ('doacao', ?, 'status_alterado', ?)",
-      [id, JSON.stringify({ anterior: atual, novo: status })]
+      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes, id_usuario) VALUES ('doacao', ?, 'status_alterado', ?, ?)",
+      [id, JSON.stringify({ anterior: atual, novo: status }), req.usuario.id_usuario]
     );
     await conexao.commit();
     iniciou = false;
