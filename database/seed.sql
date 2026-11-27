@@ -1,5 +1,6 @@
 -- Dados iniciais opcionais para desenvolvimento e testes.
 -- Pode ser executado mais de uma vez sem duplicar categorias/itens.
+SET NAMES utf8mb4;
 USE maos_que_ajudam;
 
 INSERT IGNORE INTO categoria (nome)
