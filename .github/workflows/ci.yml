@@ -44,8 +44,8 @@ jobs:
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Preparar banco de testes
         run: |
-          mariadb -h 127.0.0.1 -uroot -proot < database/schema.sql
-          mariadb -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/seed.sql
+          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot < database/schema.sql
+          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
         run: npm run prepare
       - name: Executar testes unitários e de integração
