@@ -15,6 +15,10 @@ export function lerPaginacao(query = {}) {
     throw new HttpError(400, `O parâmetro limit deve estar entre 1 e ${LIMITE_MAXIMO}`);
   }
 
+  if (!Number.isSafeInteger((page - 1) * limit)) {
+    throw new HttpError(400, "A combinação de page e limit excede o intervalo permitido");
+  }
+
   return {
     possuiPaginacao,
     page,
