@@ -133,11 +133,28 @@ function render() {
         ${renderHistorico(state.doacoes)}
       </section>
       <section class="painel" id="painel-estoque" ${state.aba !== "estoque" ? "hidden" : ""}>
-        <div class="cabecalho-secao"><div><h2>Estoque</h2><p>O saldo aumenta quando uma doação é recebida e diminui quando é distribuída.</p></div><button class="botao secundario" id="atualizar-estoque">Atualizar</button></div>
-        <div class="tabela-wrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Unidade</th><th>Saldo atual</th><th>Atualizado em</th></tr></thead><tbody>
-        ${state.estoque.map(i => `<tr><td>${esc(i.nome)}</td><td>${esc(i.categoria)}</td><td>${esc(i.unidade)}</td><td><strong>${i.quantidade_atual}</strong></td><td>${esc(i.atualizado_em || "—")}</td></tr>`).join("") || '<tr><td colspan="5" class="vazio">Nenhum item no estoque.</td></tr>'}
+        <div class="cabecalho-secao"><div><h2>Estoque</h2><p>Saldo, entradas, saídas e alertas de reposição por item.</p></div><button class="botao secundario" id="atualizar-estoque">Atualizar</button></div>
+        ${state.usuario?.perfil === "administrador" ? `<div class="formularios-estoque">
+          <form id="form-ajuste-estoque" class="formulario">
+            <h3>Ajuste manual de estoque</h3>
+            <label>Item<select name="id_item" required><option value="">Selecione</option>${state.itens.map(i => `<option value="${i.id_item}">${esc(i.nome)}</option>`).join("")}</select></label>
+            <label>Movimentação<select name="tipo" required><option value="entrada">Entrada</option><option value="saida">Saída</option></select></label>
+            <label>Quantidade<input name="quantidade" type="number" min="1" max="2147483647" step="1" required></label>
+            <label>Observação<input name="observacao" maxlength="255" placeholder="Motivo do ajuste"></label>
+            <button class="botao primario" type="submit">Registrar movimentação</button>
+          </form>
+          <form id="form-limite-estoque" class="formulario">
+            <h3>Limite mínimo / alerta</h3>
+            <label>Item<select name="id_item" required><option value="">Selecione</option>${state.itens.map(i => `<option value="${i.id_item}">${esc(i.nome)}</option>`).join("")}</select></label>
+            <label>Quantidade mínima<input name="quantidade_minima" type="number" min="0" max="2147483647" step="1" value="0" required></label>
+            <p class="ajuda">O alerta aparece quando o saldo fica igual ou abaixo do limite. Zero desativa o alerta.</p>
+            <button class="botao secundario" type="submit">Salvar limite</button>
+          </form>
+        </div>` : ""}
+        <div class="tabela-wrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Unidade</th><th>Saldo atual</th><th>Mínimo</th><th>Alerta</th><th>Atualizado em</th></tr></thead><tbody>
+        ${state.estoque.map(i => `<tr><td>${esc(i.nome)}</td><td>${esc(i.categoria)}</td><td>${esc(i.unidade)}</td><td><strong>${i.quantidade_atual}</strong></td><td>${i.quantidade_minima}</td><td>${Number(i.estoque_baixo) ? '<span class="alerta-estoque">Repor estoque</span>' : '<span class="normal-estoque">Normal</span>'}</td><td>${esc(i.atualizado_em || "—")}</td></tr>`).join("") || '<tr><td colspan="7" class="vazio">Nenhum item no estoque.</td></tr>'}
         </tbody></table></div>
-        <div class="cabecalho-secao historico-titulo"><div><h2>Movimentações recentes</h2><p>Entradas e saídas registradas automaticamente pelo ciclo das doações.</p></div></div>
+        <div class="cabecalho-secao historico-titulo"><div><h2>Movimentações recentes</h2><p>Entradas e saídas de doações e ajustes manuais auditados.</p></div></div>
         <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Item</th><th>Movimento</th><th>Quantidade</th><th>Origem</th><th>Referência</th></tr></thead><tbody>
         ${state.movimentacoes.map(m => `<tr><td>${esc(m.criado_em)}</td><td>${esc(m.nome_item)}</td><td>${esc(m.tipo)}</td><td>${m.quantidade} ${esc(m.unidade)}</td><td>${esc(m.origem)}</td><td>${esc(m.id_referencia ?? "—")}</td></tr>`).join("") || '<tr><td colspan="6" class="vazio">Nenhuma movimentação registrada.</td></tr>'}
         </tbody></table></div>
@@ -167,6 +184,8 @@ function render() {
   document.querySelector("#atualizar")?.addEventListener("click", () => carregar().catch(e => aviso(e.message, "erro")));
   document.querySelector("#atualizar-doadores")?.addEventListener("click", () => carregar().catch(e => aviso(e.message, "erro")));
   document.querySelector("#atualizar-estoque")?.addEventListener("click", () => carregar().catch(e => aviso(e.message, "erro")));
+  document.querySelector("#form-ajuste-estoque")?.addEventListener("submit", salvarAjusteEstoque);
+  document.querySelector("#form-limite-estoque")?.addEventListener("submit", salvarLimiteEstoque);
   document.querySelector("#form-doador")?.addEventListener("submit", salvarDoador);
   document.querySelector("#cancelar-edicao")?.addEventListener("click", resetFormulario);
   app.querySelectorAll("[data-editar]").forEach(b => b.addEventListener("click", () => editarDoador(Number(b.dataset.editar))));
@@ -326,6 +345,30 @@ function imprimirRelatorio() {
     <script>window.addEventListener("load",()=>window.print());</script>
     </body></html>`);
   janela.document.close();
+}
+async function salvarAjusteEstoque(event) {
+  event.preventDefault();
+  const dados = Object.fromEntries(new FormData(event.currentTarget));
+  dados.id_item = Number(dados.id_item);
+  dados.quantidade = Number(dados.quantidade);
+  try {
+    await api("/api/estoque/movimentacoes", { method: "POST", body: JSON.stringify(dados) });
+    await carregar();
+    aviso("Movimentação de estoque registrada.", "sucesso");
+  } catch (erro) { aviso(erro.message, "erro"); }
+}
+async function salvarLimiteEstoque(event) {
+  event.preventDefault();
+  const dados = Object.fromEntries(new FormData(event.currentTarget));
+  const id = Number(dados.id_item);
+  const quantidade_minima = Number(dados.quantidade_minima);
+  try {
+    await api(`/api/estoque/${id}/limite-minimo`, {
+      method: "PATCH", body: JSON.stringify({ quantidade_minima }),
+    });
+    await carregar();
+    aviso("Limite mínimo atualizado.", "sucesso");
+  } catch (erro) { aviso(erro.message, "erro"); }
 }
 async function exportarCSV() {
   const resposta = await fetch("/api/relatorios/doacoes.csv", {
