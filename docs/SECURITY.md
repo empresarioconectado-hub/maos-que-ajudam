@@ -15,16 +15,16 @@ O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente
 - Validação de transições de status e bloqueio de saldo negativo.
 - Ajustes manuais e configuração de limites de estoque restritos a administradores, com auditoria.
 - Neutralização de conteúdo perigoso na exportação CSV para reduzir CSV Injection.
-- Auditoria da criação e das mudanças de status de doações, ajustes manuais de estoque e configuração de limites mínimos.
+- Auditoria de criação e transições de doações, ajustes manuais de estoque e configuração de limites mínimos, vinculada à conta autenticada.
 - Limitação em memória de tentativas de login por endereço IP.
 - Segredo de assinatura obrigatório na inicialização, com tamanho mínimo de 32 bytes.
 - Provisionamento inicial de contas por comando administrativo, sem senha padrão.
 
 ## Limitações relevantes
 
-- Não há recuperação de senha, MFA ou revogação individual imediata de tokens já emitidos.
+- Não há recuperação de senha ou MFA.
 - A auditoria registra a conta que executou a operação, mas não registra endereço IP nem agente do usuário.
-- Tokens são validados contra o estado atual da conta em cada requisição; não há logout/revogação individual por token.
+- Tokens são validados contra o estado atual da conta em cada requisição; não há logout ou revogação individual por token.
 - O limitador de login é local ao processo e não compartilha estado entre instâncias.
 - O token do navegador fica em `sessionStorage`; um XSS bem-sucedido pode acessá-lo, portanto CSP e revisão da interface são necessárias.
 - Não há política CORS explícita por allowlist nem proteção distribuída contra abuso.
