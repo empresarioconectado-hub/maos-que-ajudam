@@ -54,7 +54,7 @@ A aplicação possui autenticação por token, perfis básicos e trilha de audit
 
 ## Gestão operacional
 
-O fluxo de doação possui transições controladas. O registro inicial cria uma doação com status `registrada`, sem alterar o estoque. A confirmação de recebimento gera entradas; a confirmação de distribuição gera saídas. O saldo não pode ficar negativo.
+O fluxo de doação possui transições controladas. O registro inicial cria uma doação com status `registrada`, sem alterar o estoque. A confirmação de recebimento gera entradas; a confirmação de distribuição gera saídas. Administradores também podem registrar ajustes manuais e configurar limites mínimos de reposição. O saldo não pode ficar negativo.
 
 A atualização do status, do saldo, da movimentação e do registro de auditoria ocorre em uma única transação InnoDB. Em caso de falha, toda a operação é revertida.
 
