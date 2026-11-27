@@ -27,6 +27,10 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
 
   const live = await request("/api/health/live");
   assert.equal(live.status, 200);
+  assert.ok(live.body.status === "ok");
+  const responseWithId = await fetch(base + "/api/health/live");
+  assert.match(responseWithId.headers.get("x-request-id") || "", /^[0-9a-f-]{36}$/i);
+  assert.equal(responseWithId.headers.get("x-content-type-options"), "nosniff");
   const health = await request("/api/health/ready");
   assert.equal(health.status, 200);
   assert.equal(health.body.database, "connected");
@@ -43,6 +47,25 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     body: JSON.stringify({ nome: "Duplicado", email }),
   });
   assert.equal(duplicado.status, 409);
+
+  const estoqueAntes = await request("/api/estoque");
+  const saldoInicial = estoqueAntes.body.find(item => item.id_item === 1)?.quantidade_atual ?? 0;
+  const [doacoesAntesRollback] = await pool.execute(
+    "SELECT COUNT(*) AS total FROM doacao WHERE id_doador = ?", [idDoador],
+  );
+  const rollback = await request("/api/doacoes", {
+    method: "POST",
+    body: JSON.stringify({
+      id_doador: idDoador,
+      data_doacao: new Date().toISOString().slice(0, 10),
+      itens: [{ id_item: 1, quantidade: 1 }, { id_item: 2147483647, quantidade: 1 }],
+    }),
+  });
+  assert.equal(rollback.status, 400);
+  const [doacoesAposRollback] = await pool.execute(
+    "SELECT COUNT(*) AS total FROM doacao WHERE id_doador = ?", [idDoador],
+  );
+  assert.equal(doacoesAposRollback[0].total, doacoesAntesRollback[0].total);
 
   const doacao = await request("/api/doacoes", {
     method: "POST",
@@ -63,12 +86,15 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
 
   const estoqueEntrada = await request("/api/estoque");
   const itemEntrada = estoqueEntrada.body.find(item => item.id_item === 1);
-  assert.ok(itemEntrada.quantidade_atual >= 2);
+  assert.equal(itemEntrada.quantidade_atual, saldoInicial + 2);
 
   const distribuicao = await request(`/api/doacoes/${doacao.body.id_doacao}/status`, {
     method: "PATCH", body: JSON.stringify({ status: "distribuida" }),
   });
   assert.equal(distribuicao.status, 200);
+  const estoqueAposDistribuicao = await request("/api/estoque");
+  const itemAposDistribuicao = estoqueAposDistribuicao.body.find(item => item.id_item === 1);
+  assert.equal(itemAposDistribuicao.quantidade_atual, saldoInicial);
 
   const repeticao = await request(`/api/doacoes/${doacao.body.id_doacao}/status`, {
     method: "PATCH", body: JSON.stringify({ status: "distribuida" }),
@@ -84,6 +110,11 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     [doacao.body.id_doacao],
   );
   assert.ok(auditoria[0].total >= 2);
+  const [movimentacoes] = await pool.execute(
+    "SELECT tipo, quantidade FROM movimentacao_estoque WHERE origem = 'doacao' AND id_referencia = ? ORDER BY id_movimentacao",
+    [doacao.body.id_doacao],
+  );
+  assert.deepEqual(movimentacoes.map(m => [m.tipo, m.quantidade]), [["entrada", 2], ["saida", 2]]);
 
   const exportacao = await fetch(base + "/api/relatorios/doacoes.csv");
   assert.equal(exportacao.status, 200);
