@@ -139,16 +139,17 @@ Registra cada entrada ou saída, com item, quantidade, origem e referência à d
 
 ### `auditoria`
 
-Registra a criação da doação e as transições de status, armazenando detalhes em JSON. A tabela não deve ser usada como substituta de uma trilha de auditoria completa: os eventos atuais ainda não armazenam o identificador do operador autenticado.
+Registra a criação da doação e as transições de status, armazenando detalhes em JSON e o usuário autenticado responsável. A chave estrangeira utiliza `ON DELETE SET NULL` para preservar os eventos mesmo que uma conta seja removida.
 
 ### Migração em bancos existentes
 
-Para uma base já criada com a versão anterior do schema, faça backup e execute uma única vez:
+Para uma base já criada com a versão anterior do schema, faça backup e execute, em ordem:
 
 ```bash
 mariadb -u root -p maos_que_ajudam < database/migrations/002_gestao_operacional.sql
+mariadb -u root -p maos_que_ajudam < database/migrations/003_autenticacao.sql
 ```
 
-A migração adiciona o status padrão `registrada`, cria as tabelas complementares e inicializa saldo zero para os itens existentes. Não a execute novamente após sucesso, pois a alteração da coluna e da constraint não é idempotente.
+A migração 002 adiciona o status padrão `registrada`, cria as tabelas complementares e inicializa saldo zero para os itens existentes. A migração 003 cria a tabela de usuários e associa os eventos de auditoria às contas. Ambas verificam estruturas existentes e podem ser reexecutadas.
 
 Para bancos novos, utilize o `database/schema.sql` atualizado. As migrações 002 e 003 agora verificam a existência de estruturas antes de criá-las e podem ser reexecutadas; ainda assim, faça backup antes de qualquer alteração em dados persistentes.
