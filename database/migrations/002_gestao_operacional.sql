@@ -1,13 +1,42 @@
 -- Migration 002: gestão operacional de estoque, status e auditoria.
--- Execute uma única vez após o schema.sql em bancos já existentes.
+-- Compatível com a versão anterior do schema e segura para reexecução.
+-- Faça backup antes de aplicar em uma base com dados persistentes.
 USE maos_que_ajudam;
 
-ALTER TABLE doacao
-  ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'registrada';
+-- O schema atual já pode conter a coluna e a constraint. A verificação no
+-- catálogo evita falhas por duplicidade e permite executar a migração novamente.
+SET @col_status_existe = (
+  SELECT COUNT(*)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'doacao'
+    AND COLUMN_NAME = 'status'
+);
+SET @sql_status = IF(
+  @col_status_existe = 0,
+  'ALTER TABLE doacao ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT ''registrada''',
+  'SELECT 1'
+);
+PREPARE stmt_status FROM @sql_status;
+EXECUTE stmt_status;
+DEALLOCATE PREPARE stmt_status;
 
-ALTER TABLE doacao
-  ADD CONSTRAINT chk_doacao_status
-  CHECK (status IN ('registrada', 'recebida', 'distribuida', 'cancelada'));
+SET @chk_status_existe = (
+  SELECT COUNT(*)
+  FROM information_schema.TABLE_CONSTRAINTS
+  WHERE CONSTRAINT_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'doacao'
+    AND CONSTRAINT_NAME = 'chk_doacao_status'
+    AND CONSTRAINT_TYPE = 'CHECK'
+);
+SET @sql_chk_status = IF(
+  @chk_status_existe = 0,
+  'ALTER TABLE doacao ADD CONSTRAINT chk_doacao_status CHECK (status IN (''registrada'', ''recebida'', ''distribuida'', ''cancelada''))',
+  'SELECT 1'
+);
+PREPARE stmt_chk_status FROM @sql_chk_status;
+EXECUTE stmt_chk_status;
+DEALLOCATE PREPARE stmt_chk_status;
 
 CREATE TABLE IF NOT EXISTS estoque (
   id_item INT PRIMARY KEY,
@@ -46,6 +75,6 @@ CREATE TABLE IF NOT EXISTS auditoria (
   KEY idx_auditoria_data (criado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO estoque (id_item, quantidade_atual)
-SELECT id_item, 0 FROM item
-ON DUPLICATE KEY UPDATE id_item = VALUES(id_item);
+-- Inicializa somente os itens sem saldo cadastrado; não zera estoque existente.
+INSERT IGNORE INTO estoque (id_item, quantidade_atual)
+SELECT id_item, 0 FROM item;
