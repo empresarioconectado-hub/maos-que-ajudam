@@ -2,7 +2,7 @@ import "./style.css";
 
 const app = document.querySelector("#app");
 const state = {
-  doadores: [], itens: [], doacoes: [], estoque: [], resumo: null,
+  doadores: [], itens: [], doacoes: [], estoque: [], movimentacoes: [], resumo: null,
   editando: null, itemSelecionado: [], aba: "inicio",
 };
 
@@ -39,14 +39,15 @@ const aviso = (mensagem, tipo = "sucesso") => {
   aviso.timer = window.setTimeout(() => { el.hidden = true; }, 5000);
 };
 async function carregar() {
-  const [doadores, itens, doacoes, estoque, resumo] = await Promise.all([
+  const [doadores, itens, doacoes, estoque, movimentacoes, resumo] = await Promise.all([
     api("/api/doadores"), api("/api/itens"), api("/api/doacoes"),
-    api("/api/estoque"), api("/api/relatorios/resumo"),
+    api("/api/estoque"), api("/api/estoque/movimentacoes"), api("/api/relatorios/resumo"),
   ]);
   state.doadores = doadores;
   state.itens = itens;
   state.doacoes = doacoes;
   state.estoque = estoque;
+  state.movimentacoes = movimentacoes;
   state.resumo = resumo;
   render();
 }
@@ -125,6 +126,10 @@ function render() {
         <div class="tabela-wrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Unidade</th><th>Saldo atual</th><th>Atualizado em</th></tr></thead><tbody>
         ${state.estoque.map(i => `<tr><td>${esc(i.nome)}</td><td>${esc(i.categoria)}</td><td>${esc(i.unidade)}</td><td><strong>${i.quantidade_atual}</strong></td><td>${esc(i.atualizado_em || "—")}</td></tr>`).join("") || '<tr><td colspan="5" class="vazio">Nenhum item no estoque.</td></tr>'}
         </tbody></table></div>
+        <div class="cabecalho-secao historico-titulo"><div><h2>Movimentações recentes</h2><p>Entradas e saídas registradas automaticamente pelo ciclo das doações.</p></div></div>
+        <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Item</th><th>Movimento</th><th>Quantidade</th><th>Origem</th><th>Referência</th></tr></thead><tbody>
+        ${state.movimentacoes.map(m => `<tr><td>${esc(m.criado_em)}</td><td>${esc(m.nome_item)}</td><td>${esc(m.tipo)}</td><td>${m.quantidade} ${esc(m.unidade)}</td><td>${esc(m.origem)}</td><td>${esc(m.id_referencia ?? "—")}</td></tr>`).join("") || '<tr><td colspan="6" class="vazio">Nenhuma movimentação registrada.</td></tr>'}
+        </tbody></table></div>
       </section>
       <section class="painel" id="painel-catalogo" ${state.aba !== "catalogo" ? "hidden" : ""}>
         <div class="cabecalho-secao"><div><h2>Catálogo de itens</h2><p>Itens disponíveis para compor uma doação.</p></div></div>
@@ -148,12 +153,13 @@ function render() {
   }));
   document.querySelector("#form-doacao")?.addEventListener("submit", salvarDoacao);
   app.querySelectorAll("[data-status]").forEach(b => b.addEventListener("click", () => alterarStatus(Number(b.dataset.id), b.dataset.status)));
+  app.querySelectorAll("[data-comprovante]").forEach(b => b.addEventListener("click", () => imprimirComprovante(Number(b.dataset-comprovante))));
 }
 function renderHistorico(doacoes) {
   return `<div class="historico">${doacoes.map(d => {
     const proxima = d.status === "registrada" ? [["recebida", "Confirmar recebimento"], ["cancelada", "Cancelar"]] :
       d.status === "recebida" ? [["distribuida", "Confirmar distribuição"]] : [];
-    return `<article class="doacao"><div><strong>Doação #${d.id_doacao}</strong><span>${esc(d.data_doacao)} · ${esc(d.doador?.nome || "Doador")}</span><span class="status-doacao status-${esc(d.status)}">${esc(d.status)}</span>${d.observacao ? `<p>${esc(d.observacao)}</p>` : ""}</div><div><ul>${(d.itens || []).map(i => `<li>${esc(i.nome)}: ${i.quantidade} ${esc(i.unidade)}</li>`).join("") || "<li>Sem itens</li>"}</ul><div class="acoes-status">${proxima.map(([status, label]) => `<button class="botao ${status === "cancelada" ? "secundario" : "primario"}" data-id="${d.id_doacao}" data-status="${status}">${label}</button>`).join("")}</div></div></article>`;
+    return `<article class="doacao"><div><strong>Doação #${d.id_doacao}</strong><span>${esc(d.data_doacao)} · ${esc(d.doador?.nome || "Doador")}</span><span class="status-doacao status-${esc(d.status)}">${esc(d.status)}</span>${d.observacao ? `<p>${esc(d.observacao)}</p>` : ""}</div><div><ul>${(d.itens || []).map(i => `<li>${esc(i.nome)}: ${i.quantidade} ${esc(i.unidade)}</li>`).join("") || "<li>Sem itens</li>"}</ul><div class="acoes-status"><button class="botao secundario" data-comprovante="${d.id_doacao}">Comprovante / imprimir</button>${proxima.map(([status, label]) => `<button class="botao ${status === "cancelada" ? "secundario" : "primario"}" data-id="${d.id_doacao}" data-status="${status}">${label}</button>`).join("")}</div></div></article>`;
   }).join("") || '<p class="vazio">Nenhuma doação registrada.</p>'}</div>`;
 }
 function resetFormulario() {
@@ -219,6 +225,29 @@ async function salvarDoacao(event) {
     aviso("Doação registrada. Confirme o recebimento para atualizar o estoque.");
   } catch (e) { aviso(e.message, "erro"); }
 }
+
+function imprimirComprovante(id) {
+  const doacao = state.doacoes.find(item => item.id_doacao === id);
+  if (!doacao) return aviso("Doação não encontrada para emissão do comprovante.", "erro");
+  const itens = (doacao.itens || []).map(item =>
+    `<tr><td>${esc(item.nome)}</td><td>${item.quantidade}</td><td>${esc(item.unidade)}</td></tr>`
+  ).join("");
+  const janela = window.open("", "_blank");
+  if (!janela) return aviso("Permita janelas pop-up para imprimir o comprovante.", "erro");
+  janela.opener = null;
+  janela.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Comprovante de doação #${id}</title>
+    <style>body{font:14px Arial,sans-serif;color:#222;max-width:760px;margin:40px auto;padding:0 24px}h1{color:#155b45}small{color:#666}.linha{border-top:1px solid #ddd;margin:20px 0}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{text-align:left;padding:10px;border-bottom:1px solid #ddd}footer{margin-top:48px;color:#666;font-size:12px}@media print{button{display:none}body{margin:0}}</style></head><body>
+    <h1>Mãos que Ajudam</h1><h2>Comprovante de doação #${id}</h2>
+    <p><strong>Doador:</strong> ${esc(doacao.doador?.nome || "Não informado")}</p>
+    <p><strong>Data:</strong> ${esc(doacao.data_doacao)}</p><p><strong>Status:</strong> ${esc(doacao.status)}</p>
+    ${doacao.observacao ? `<p><strong>Observação:</strong> ${esc(doacao.observacao)}</p>` : ""}
+    <div class="linha"></div><table><thead><tr><th>Item</th><th>Quantidade</th><th>Unidade</th></tr></thead><tbody>${itens}</tbody></table>
+    <footer>Documento gerado pelo sistema Mãos que Ajudam. Este comprovante registra os dados existentes no momento da emissão.</footer>
+    <button onclick="window.print()">Imprimir / salvar em PDF</button></body></html>`);
+  janela.document.close();
+  janela.focus();
+}
+
 async function alterarStatus(id, status) {
   const mensagens = { recebida: "Confirmar recebimento? Os itens serão adicionados ao estoque.", distribuida: "Confirmar distribuição? Os itens serão baixados do estoque.", cancelada: "Cancelar esta doação?" };
   if (!confirm(mensagens[status])) return;
