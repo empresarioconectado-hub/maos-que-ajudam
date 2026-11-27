@@ -33,6 +33,18 @@ CREATE TABLE IF NOT EXISTS usuario (
   CONSTRAINT chk_usuario_ativo CHECK (ativo IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS sessao_usuario (
+  id_sessao CHAR(36) NOT NULL PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  expira_em DATETIME NOT NULL,
+  revogado_em DATETIME NULL,
+  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_sessao_usuario FOREIGN KEY (id_usuario)
+    REFERENCES usuario (id_usuario) ON UPDATE CASCADE ON DELETE CASCADE,
+  KEY idx_sessao_usuario_expiracao (id_usuario, expira_em),
+  KEY idx_sessao_expiracao (expira_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS categoria (
   id_categoria INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(60) NOT NULL,
