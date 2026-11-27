@@ -22,7 +22,7 @@ DOADOR (1) -------- (N) DOACAO
                        ITEM (N) -------- (1) CATEGORIA
 ```
 
-O relacionamento entre doação e item é muitos-para-muitos e é resolvido pela tabela associativa `doacao_item`. A quantidade do item pertence ao relacionamento, por isso é armazenada nessa tabela.
+O relacionamento entre doação e item é muitos-para-muitos e é resolvido pela tabela associativa `doacao_item`. A quantidade do item pertence ao relacionamento, por isso é armazenada nessa tabela. As tabelas complementares de operação e autenticação não alteram esses cinco elementos centrais exigidos na atividade.
 
 ## Tabelas
 
