@@ -268,6 +268,46 @@ paths:
           description: Histórico de movimentações
         '400':
           $ref: '#/components/responses/RequisicaoInvalida'
+    post:
+      tags: [Estoque]
+      summary: Registra ajuste manual de estoque (administrador)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NovoAjusteEstoque' }
+      responses:
+        '201':
+          description: Ajuste registrado
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '403':
+          $ref: '#/components/responses/Proibido'
+        '409':
+          description: Estoque insuficiente ou limite excedido
+  /api/estoque/{id}/limite-minimo:
+    patch:
+      tags: [Estoque]
+      summary: Configura limite mínimo e alerta (administrador)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LimiteMinimo' }
+      responses:
+        '200':
+          description: Limite atualizado
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '403':
+          $ref: '#/components/responses/Proibido'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
   /api/relatorios/resumo:
     get:
       tags: [Relatórios]
@@ -348,6 +388,19 @@ components:
         type: integer
         minimum: 1
   schemas:
+    NovoAjusteEstoque:
+      type: object
+      properties:
+        id_item: { type: integer, minimum: 1 }
+        tipo: { type: string, enum: [entrada, saida] }
+        quantidade: { type: integer, minimum: 1 }
+        observacao: { type: string, nullable: true, maxLength: 255 }
+      required: [id_item, tipo, quantidade]
+    LimiteMinimo:
+      type: object
+      properties:
+        quantidade_minima: { type: integer, minimum: 0 }
+      required: [quantidade_minima]
     LoginRequest:
       type: object
       properties:
@@ -473,6 +526,11 @@ components:
             required: [id_item, quantidade]
       required: [id_doador, data_doacao, itens]
   responses:
+    Proibido:
+      description: Perfil sem permissão para a operação
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
     NaoAutorizado:
       description: Token ausente, inválido ou expirado
       content:
