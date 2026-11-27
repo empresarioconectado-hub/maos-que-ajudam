@@ -116,7 +116,7 @@ function render() {
           <div class="acoes"><button class="botao primario" id="salvar-doador" type="submit">Cadastrar doador</button><button class="botao secundario" id="cancelar-edicao" type="button" hidden>Cancelar edição</button></div>
         </form>
         <div class="tabela-wrap"><table><thead><tr><th>ID</th><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody>
-        ${state.doadores.map(d => `<tr><td>${d.id_doador}</td><td>${esc(d.nome)}</td><td>${esc(d.email || "—")}</td><td>${esc(d.telefone || "—")}</td><td>${esc(d.data_cadastro || "—")}</td><td class="acoes-tabela"><button class="link" data-editar="${d.id_doador}">Editar</button><button class="link perigo" data-excluir="${d.id_doador}">Excluir</button></td></tr>`).join("") || '<tr><td colspan="6" class="vazio">Nenhum doador cadastrado.</td></tr>'}
+        ${state.doadores.map(d => `<tr><td>${d.id_doador}</td><td>${esc(d.nome)}</td><td>${esc(d.email || "—")}</td><td>${esc(d.telefone || "—")}</td><td>${esc(d.data_cadastro || "—")}</td><td class="acoes-tabela"><button class="link" data-editar="${d.id_doador}">Editar</button>${state.usuario?.perfil === "administrador" ? `<button class="link perigo" data-excluir="${d.id_doador}">Excluir</button>` : ""}</td></tr>`).join("") || '<tr><td colspan="6" class="vazio">Nenhum doador cadastrado.</td></tr>'}
         </tbody></table></div>
       </section>
       <section class="painel" id="painel-doacoes" ${state.aba !== "doacoes" ? "hidden" : ""}>
