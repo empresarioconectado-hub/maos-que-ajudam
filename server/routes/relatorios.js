@@ -33,7 +33,7 @@ router.get("/resumo", async (_req, res) => {
 function campoCsv(valor) {
   let texto = String(valor ?? "");
   // Evita que planilhas interpretem conteúdo fornecido pelo usuário como fórmula.
-  if (/^[=+@-]/.test(texto)) texto = "'" + texto;
+  if (/^[\\u0000-\\u0020]*[=+@-]/.test(texto)) texto = "'" + texto;
   return '"' + texto.replace(/"/g, '""') + '"';
 }
 
@@ -42,8 +42,8 @@ router.get("/doacoes.csv", async (_req, res) => {
     "SELECT d.id_doacao, d.data_doacao, d.status, dr.nome AS doador, " +
     "i.nome AS item, di.quantidade, i.unidade " +
     "FROM doacao d INNER JOIN doador dr ON dr.id_doador = d.id_doador " +
-    "INNER JOIN doacao_item di ON di.id_doacao = d.id_doacao " +
-    "INNER JOIN item i ON i.id_item = di.id_item " +
+    "LEFT JOIN doacao_item di ON di.id_doacao = d.id_doacao " +
+    "LEFT JOIN item i ON i.id_item = di.id_item " +
     "ORDER BY d.data_doacao DESC, d.id_doacao DESC, i.nome"
   );
   const linhas = [
