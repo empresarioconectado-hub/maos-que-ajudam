@@ -108,10 +108,7 @@ mariadb -u root -p < database/seed.sql
 | GET | `/api/relatorios/resumo` | Indicadores gerenciais |
 | GET | `/api/relatorios/doacoes.csv` | Exportação CSV |
 | PATCH | `/api/doacoes/:id/status` | Atualização controlada do ciclo da doação |
-| GET | `/api/estoque` | Saldos atuais por item |
 | GET | `/api/estoque/movimentacoes` | Histórico de entradas e saídas |
-| GET | `/api/relatorios/resumo` | Indicadores operacionais |
-| GET | `/api/relatorios/doacoes.csv` | Exportação CSV |
 
 Com exceção das verificações de saúde e do login, os endpoints exigem `Authorization: Bearer <token>`. O token expira em oito horas. Os perfis disponíveis são `administrador` e `operador`; somente administradores podem excluir doadores.
 
