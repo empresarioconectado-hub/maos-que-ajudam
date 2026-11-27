@@ -3,22 +3,12 @@ import pool from "../db.js";
 import { HttpError } from "../erros.js";
 import { validarDoacao } from "../validacao.js";
 import { validarTransicaoStatus } from "../regras-doacao.js";
+import { lerPaginacao, montarMetadadosPaginacao } from "../paginacao.js";
 
 const router = Router();
 const STATUS_VALIDOS = new Set(["recebida", "distribuida", "cancelada"]);
 
-router.get("/", async (req, res) => {
-  const [rows] = await pool.execute(
-    "SELECT d.id_doacao, d.data_doacao, d.observacao, d.status, " +
-    "dr.id_doador, dr.nome AS nome_doador, " +
-    "i.id_item, i.nome AS nome_item, i.unidade, di.quantidade " +
-    "FROM doacao d " +
-    "INNER JOIN doador dr ON dr.id_doador = d.id_doador " +
-    "LEFT JOIN doacao_item di ON di.id_doacao = d.id_doacao " +
-    "LEFT JOIN item i ON i.id_item = di.id_item " +
-    "ORDER BY d.data_doacao DESC, d.id_doacao DESC, i.nome ASC"
-  );
-
+function agruparDoacoes(rows) {
   const doacoes = new Map();
   for (const row of rows) {
     if (!doacoes.has(row.id_doacao)) {
@@ -40,7 +30,44 @@ router.get("/", async (req, res) => {
       });
     }
   }
-  return res.json(Array.from(doacoes.values()));
+  return Array.from(doacoes.values());
+}
+
+const SELECT_DOACOES =
+  "SELECT d.id_doacao, d.data_doacao, d.observacao, d.status, " +
+  "dr.id_doador, dr.nome AS nome_doador, " +
+  "i.id_item, i.nome AS nome_item, i.unidade, di.quantidade " +
+  "FROM doacao d " +
+  "INNER JOIN doador dr ON dr.id_doador = d.id_doador " +
+  "LEFT JOIN doacao_item di ON di.id_doacao = d.id_doacao " +
+  "LEFT JOIN item i ON i.id_item = di.id_item ";
+
+router.get("/", async (req, res) => {
+  const paginacao = lerPaginacao(req.query);
+  let rows;
+
+  if (paginacao.possuiPaginacao) {
+    const [[{ total }]] = await pool.execute("SELECT COUNT(*) AS total FROM doacao");
+    const consultaPaginada = SELECT_DOACOES.replace(
+      "FROM doacao d ",
+      "FROM doacao d INNER JOIN (" +
+      "SELECT id_doacao FROM doacao ORDER BY data_doacao DESC, id_doacao DESC LIMIT ? OFFSET ?" +
+      ") pagina ON pagina.id_doacao = d.id_doacao "
+    );
+    [rows] = await pool.execute(
+      consultaPaginada + "ORDER BY d.data_doacao DESC, d.id_doacao DESC, i.nome ASC",
+      [paginacao.limit, paginacao.offset]
+    );
+    return res.json({
+      data: agruparDoacoes(rows),
+      pagination: montarMetadadosPaginacao(paginacao.page, paginacao.limit, Number(total)),
+    });
+  }
+
+  [rows] = await pool.execute(
+    SELECT_DOACOES + "ORDER BY d.data_doacao DESC, d.id_doacao DESC, i.nome ASC"
+  );
+  return res.json(agruparDoacoes(rows));
 });
 
 router.post("/", async (req, res) => {
@@ -67,8 +94,8 @@ router.post("/", async (req, res) => {
     }
 
     await conexao.execute(
-      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes) VALUES ('doacao', ?, 'criada', ?)",
-      [idDoacao, JSON.stringify({ id_doador, quantidade_itens: itens.length })]
+      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes, id_usuario) VALUES ('doacao', ?, 'criada', ?, ?)",
+      [idDoacao, JSON.stringify({ id_doador, quantidade_itens: itens.length }), req.usuario.id_usuario]
     );
     await conexao.commit();
     iniciou = false;
@@ -97,7 +124,9 @@ router.post("/", async (req, res) => {
 router.patch("/:id/status", async (req, res) => {
   const idTexto = req.params.id;
   const id = Number(idTexto);
-  if (!/^[1-9]\d*$/.test(idTexto) || !Number.isSafeInteger(id) || id <= 0) throw new HttpError(400, "ID da doação inválido");
+  if (!/^[1-9]\d*$/.test(idTexto) || !Number.isSafeInteger(id) || id <= 0) {
+    throw new HttpError(400, "ID da doação inválido");
+  }
   const { status } = req.body ?? {};
   if (!STATUS_VALIDOS.has(status)) {
     throw new HttpError(400, "Status inválido. Utilize recebida, distribuida ou cancelada");
@@ -147,8 +176,8 @@ router.patch("/:id/status", async (req, res) => {
 
     await conexao.execute("UPDATE doacao SET status = ? WHERE id_doacao = ?", [status, id]);
     await conexao.execute(
-      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes) VALUES ('doacao', ?, 'status_alterado', ?)",
-      [id, JSON.stringify({ anterior: atual, novo: status })]
+      "INSERT INTO auditoria (entidade, id_entidade, acao, detalhes, id_usuario) VALUES ('doacao', ?, 'status_alterado', ?, ?)",
+      [id, JSON.stringify({ anterior: atual, novo: status }), req.usuario.id_usuario]
     );
     await conexao.commit();
     iniciou = false;

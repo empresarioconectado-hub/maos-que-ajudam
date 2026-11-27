@@ -10,15 +10,50 @@ servers:
   - url: http://localhost:3000
     description: Ambiente local
 tags:
+  - name: Autenticação
   - name: Saúde
   - name: Doadores
   - name: Itens
   - name: Doações
   - name: Estoque
   - name: Relatórios
+security:
+  - bearerAuth: []
 paths:
+  /api/auth/login:
+    post:
+      security: []
+      tags: [Autenticação]
+      summary: Autentica uma conta e emite token Bearer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Token emitido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '401':
+          $ref: '#/components/responses/NaoAutorizado'
+        '429':
+          description: Muitas tentativas de login
+  /api/auth/me:
+    get:
+      tags: [Autenticação]
+      summary: Retorna os dados da conta autenticada
+      responses:
+        '200':
+          description: Conta autenticada
+        '401':
+          $ref: '#/components/responses/NaoAutorizado'
   /api/health/live:
     get:
+      security: []
       tags: [Saúde]
       summary: Verifica se o processo HTTP está ativo
       responses:
@@ -26,6 +61,7 @@ paths:
           description: Processo ativo
   /api/health/ready:
     get:
+      security: []
       tags: [Saúde]
       summary: Verifica se o banco está disponível
       responses:
@@ -35,6 +71,7 @@ paths:
           $ref: '#/components/responses/ErroInterno'
   /api/health:
     get:
+      security: []
       tags: [Saúde]
       summary: Verifica a API e a conexão com o banco
       responses:
@@ -214,10 +251,15 @@ paths:
   /api/estoque:
     get:
       tags: [Estoque]
-      summary: Lista saldos atuais por item
+      summary: Lista saldos atuais, limites mínimos e alertas
       responses:
         '200':
           description: Saldos atuais
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EstoqueItem' }
   /api/estoque/movimentacoes:
     get:
       tags: [Estoque]
@@ -229,8 +271,65 @@ paths:
       responses:
         '200':
           description: Histórico de movimentações
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MovimentacaoEstoque' }
         '400':
           $ref: '#/components/responses/RequisicaoInvalida'
+    post:
+      tags: [Estoque]
+      summary: Registra ajuste manual de estoque (administrador)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NovoAjusteEstoque' }
+      responses:
+        '201':
+          description: Ajuste registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResultadoAjusteEstoque' }
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '403':
+          $ref: '#/components/responses/Proibido'
+        '409':
+          description: Estoque insuficiente ou limite excedido
+  /api/estoque/{id}/limite-minimo:
+    patch:
+      tags: [Estoque]
+      summary: Configura limite mínimo e alerta (administrador)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LimiteMinimo' }
+      responses:
+        '200':
+          description: Limite atualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id_item: { type: integer }
+                  quantidade_atual: { type: integer, minimum: 0 }
+                  quantidade_minima: { type: integer, minimum: 0 }
+                required: [id_item, quantidade_atual, quantidade_minima]
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '403':
+          $ref: '#/components/responses/Proibido'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
   /api/relatorios/resumo:
     get:
       tags: [Relatórios]
@@ -252,14 +351,25 @@ paths:
     get:
       tags: [Doações]
       summary: Lista doações com doador e itens agrupados
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
       responses:
         '200':
           description: Lista de doações
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/DoacaoDetalhada' }
+                oneOf:
+                  - type: array
+                    items: { $ref: '#/components/schemas/DoacaoDetalhada' }
+                  - $ref: '#/components/schemas/ListaPaginadaDoacoes'
         '500':
           $ref: '#/components/responses/ErroInterno'
     post:
@@ -285,6 +395,11 @@ paths:
         '500':
           $ref: '#/components/responses/ErroInterno'
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
   parameters:
     Id:
       name: id
@@ -295,12 +410,94 @@ components:
         type: integer
         minimum: 1
   schemas:
+    EstoqueItem:
+      type: object
+      properties:
+        id_item: { type: integer }
+        nome: { type: string }
+        unidade: { type: string }
+        categoria: { type: string }
+        quantidade_atual: { type: integer, minimum: 0 }
+        quantidade_minima: { type: integer, minimum: 0 }
+        estoque_baixo: { type: integer, enum: [0, 1] }
+        atualizado_em: { type: string, format: date-time, nullable: true }
+      required: [id_item, nome, unidade, categoria, quantidade_atual, quantidade_minima, estoque_baixo]
+    MovimentacaoEstoque:
+      type: object
+      properties:
+        id_movimentacao: { type: integer }
+        id_item: { type: integer }
+        nome_item: { type: string }
+        tipo: { type: string, enum: [entrada, saida] }
+        quantidade: { type: integer, minimum: 1 }
+        origem: { type: string }
+        id_referencia: { type: integer, nullable: true }
+        observacao: { type: string, nullable: true }
+        criado_em: { type: string, format: date-time }
+      required: [id_movimentacao, id_item, nome_item, tipo, quantidade, origem, criado_em]
+    ResultadoAjusteEstoque:
+      type: object
+      properties:
+        id_item: { type: integer }
+        tipo: { type: string, enum: [entrada, saida] }
+        quantidade: { type: integer, minimum: 1 }
+        quantidade_atual: { type: integer, minimum: 0 }
+      required: [id_item, tipo, quantidade, quantidade_atual]
+    NovoAjusteEstoque:
+      type: object
+      properties:
+        id_item: { type: integer, minimum: 1 }
+        tipo: { type: string, enum: [entrada, saida] }
+        quantidade: { type: integer, minimum: 1 }
+        observacao: { type: string, nullable: true, maxLength: 255 }
+      required: [id_item, tipo, quantidade]
+    LimiteMinimo:
+      type: object
+      properties:
+        quantidade_minima: { type: integer, minimum: 0 }
+      required: [quantidade_minima]
+    LoginRequest:
+      type: object
+      properties:
+        email: { type: string, format: email, maxLength: 100 }
+        senha: { type: string, minLength: 12, maxLength: 128, writeOnly: true }
+      required: [email, senha]
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+        tipo: { type: string, example: Bearer }
+        expira_em: { type: integer, example: 28800 }
+        usuario:
+          type: object
+          properties:
+            id_usuario: { type: integer }
+            nome: { type: string }
+            email: { type: string, format: email }
+            perfil: { type: string, enum: [administrador, operador] }
+          required: [id_usuario, nome, email, perfil]
+      required: [token, tipo, expira_em, usuario]
     Erro:
       type: object
       properties:
         erro: { type: string, example: Requisição inválida }
         requestId: { type: string, format: uuid }
       required: [erro]
+    ListaPaginadaDoacoes:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/DoacaoDetalhada' }
+        pagination:
+          type: object
+          properties:
+            page: { type: integer, minimum: 1 }
+            limit: { type: integer, minimum: 1, maximum: 100 }
+            total: { type: integer, minimum: 0 }
+            totalPages: { type: integer, minimum: 0 }
+          required: [page, limit, total, totalPages]
+      required: [data, pagination]
     ListaPaginadaDoadores:
       type: object
       properties:
@@ -384,6 +581,16 @@ components:
             required: [id_item, quantidade]
       required: [id_doador, data_doacao, itens]
   responses:
+    Proibido:
+      description: Perfil sem permissão para a operação
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    NaoAutorizado:
+      description: Token ausente, inválido ou expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
     RequisicaoInvalida:
       description: Dados inválidos, JSON malformado ou referência inexistente
       content:

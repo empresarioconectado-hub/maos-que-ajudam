@@ -3,6 +3,9 @@ import app from "./app.js";
 import pool from "./db.js";
 
 const PORT = Number(process.env.PORT || 3000);
+if (typeof process.env.AUTH_SECRET !== "string" || Buffer.byteLength(process.env.AUTH_SECRET) < 32) {
+  throw new Error("Configure AUTH_SECRET com ao menos 32 bytes antes de iniciar a API");
+}
 if (!Number.isSafeInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error("PORT deve ser um inteiro entre 1 e 65535");
 }

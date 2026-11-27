@@ -30,3 +30,8 @@ WHERE NOT EXISTS (
   WHERE i.id_categoria = c.id_categoria
     AND i.nome = dados.nome
 );
+
+-- Inicializa saldos zerados para os itens de demonstração sem sobrescrever
+-- quantidades ou limites já configurados em execuções anteriores.
+INSERT IGNORE INTO estoque (id_item, quantidade_atual)
+SELECT id_item, 0 FROM item;

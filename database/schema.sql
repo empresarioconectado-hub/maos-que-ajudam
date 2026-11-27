@@ -20,6 +20,19 @@ CREATE TABLE IF NOT EXISTS doador (
   UNIQUE KEY uq_doador_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS usuario (
+  id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  senha_hash VARCHAR(255) NOT NULL,
+  perfil VARCHAR(20) NOT NULL DEFAULT 'operador',
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_usuario_email (email),
+  CONSTRAINT chk_usuario_perfil CHECK (perfil IN ('administrador', 'operador')),
+  CONSTRAINT chk_usuario_ativo CHECK (ativo IN (0, 1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS categoria (
   id_categoria INT AUTO_INCREMENT PRIMARY KEY,
   nome VARCHAR(60) NOT NULL,
@@ -76,8 +89,10 @@ CREATE TABLE IF NOT EXISTS doacao_item (
 CREATE TABLE IF NOT EXISTS estoque (
   id_item INT PRIMARY KEY,
   quantidade_atual INT NOT NULL DEFAULT 0,
+  quantidade_minima INT NOT NULL DEFAULT 0,
   atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT chk_estoque_quantidade CHECK (quantidade_atual >= 0),
+  CONSTRAINT chk_estoque_quantidade_minima CHECK (quantidade_minima >= 0),
   CONSTRAINT fk_estoque_item FOREIGN KEY (id_item) REFERENCES item (id_item) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -103,9 +118,13 @@ CREATE TABLE IF NOT EXISTS auditoria (
   id_entidade BIGINT NOT NULL,
   acao VARCHAR(50) NOT NULL,
   detalhes JSON NULL,
+  id_usuario INT NULL,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_auditoria_entidade (entidade, id_entidade),
-  KEY idx_auditoria_data (criado_em)
+  KEY idx_auditoria_data (criado_em),
+  KEY idx_auditoria_usuario (id_usuario),
+  CONSTRAINT fk_auditoria_usuario FOREIGN KEY (id_usuario)
+    REFERENCES usuario (id_usuario) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO estoque (id_item, quantidade_atual)

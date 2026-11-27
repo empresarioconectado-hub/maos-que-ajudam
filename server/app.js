@@ -6,6 +6,8 @@ import { HttpError } from "./erros.js";
 import doadoresRoutes from "./routes/doadores.js";
 import doacoesRoutes from "./routes/doacoes.js";
 import itensRoutes from "./routes/itens.js";
+import authRoutes from "./routes/auth.js";
+import { autenticar } from "./auth.js";
 import estoqueRoutes from "./routes/estoque.js";
 import relatoriosRoutes from "./routes/relatorios.js";
 
@@ -39,11 +41,12 @@ app.get("/api/health", async (_req, res) => {
   });
 });
 
-app.use("/api/doadores", doadoresRoutes);
-app.use("/api/itens", itensRoutes);
-app.use("/api/doacoes", doacoesRoutes);
-app.use("/api/estoque", estoqueRoutes);
-app.use("/api/relatorios", relatoriosRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/doadores", autenticar, doadoresRoutes);
+app.use("/api/itens", autenticar, itensRoutes);
+app.use("/api/doacoes", autenticar, doacoesRoutes);
+app.use("/api/estoque", autenticar, estoqueRoutes);
+app.use("/api/relatorios", autenticar, relatoriosRoutes);
 
 app.use((req, res, next) => next(new HttpError(404, "Rota não encontrada")));
 
