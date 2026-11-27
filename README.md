@@ -9,8 +9,11 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 - Paginação opcional da listagem de doadores.
 - Consulta do catálogo de itens por categoria.
 - Registro de doações com data, observação e múltiplos itens.
-- Histórico de doações.
-- Indicadores de doadores, itens e doações.
+- Histórico de doações com ciclo de status (registrada, recebida, distribuída ou cancelada).
+- Controle de saldo por item, com movimentações de entrada e saída vinculadas às doações.
+- Trilha de auditoria para criação e alteração de status das doações.
+- Dashboard com indicadores operacionais.
+- Exportação do histórico em CSV.
 - Validação de dados no backend e transação para registrar doações.
 - Verificações de liveness e readiness da API.
 - Identificador de requisição para rastrear erros.
@@ -84,6 +87,11 @@ mariadb -u root -p < database/seed.sql
 | GET/PUT/DELETE | `/api/doadores/:id` | Consulta, edição e exclusão |
 | GET | `/api/itens` | Catálogo |
 | GET/POST | `/api/doacoes` | Consulta e registro de doações |
+| PATCH | `/api/doacoes/:id/status` | Atualização controlada do ciclo da doação |
+| GET | `/api/estoque` | Saldos atuais por item |
+| GET | `/api/estoque/movimentacoes` | Histórico de entradas e saídas |
+| GET | `/api/relatorios/resumo` | Indicadores operacionais |
+| GET | `/api/relatorios/doacoes.csv` | Exportação CSV |
 
 A listagem de doadores aceita `page`, `limit` e `q`. Exemplo: `GET /api/doadores?page=1&limit=20&q=ana`. O limite máximo é 100. Sem esses parâmetros, a API preserva o array utilizado pelo frontend atual.
 
@@ -96,11 +104,11 @@ npm test
 npm run build
 ```
 
-Os testes atuais cobrem validações de entrada, normalização e regras da paginação. O workflow de CI executa os testes e o build. Testes unitários não substituem testes de integração com MariaDB ou testes ponta a ponta em navegador.
+Os testes cobrem validação de entrada, normalização, paginação e regras de transição de status. O workflow inicializa um MariaDB 10.11 descartável, executa testes de integração da API e do fluxo de estoque e gera o build do frontend. Ainda não há suíte E2E em navegador.
 
 ## Banco de dados
 
-O modelo relacional contém as tabelas `doador`, `categoria`, `item`, `doacao` e `doacao_item`. O schema está em [database/schema.sql](database/schema.sql); os dados fictícios estão em [database/seed.sql](database/seed.sql).
+O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque` e `auditoria`. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e execute uma única vez [a migração 002](database/migrations/002_gestao_operacional.sql). Os dados fictícios estão em [database/seed.sql](database/seed.sql).
 
 ## Documentação
 
@@ -112,7 +120,7 @@ O modelo relacional contém as tabelas `doador`, `categoria`, `item`, `doacao` e
 
 ## Segurança e limitações
 
-A API ainda não implementa autenticação ou autorização. Também não possui controle de estoque, distribuição de itens, trilha de auditoria de alterações de negócio, migrações versionadas ou testes de integração automatizados. Os cabeçalhos HTTP e identificadores de requisição são medidas básicas, não uma certificação de segurança.
+A API ainda não implementa autenticação ou autorização, e a trilha de auditoria atual cobre criação e transições de status das doações, sem identificar operador autenticado. A migração operacional é versionada, mas ainda não existe um gerenciador automatizado de migrações. Os cabeçalhos HTTP e identificadores de requisição são medidas básicas, não uma certificação de segurança.
 
 Não exponha a API publicamente nem utilize dados pessoais reais antes de implementar controle de acesso, HTTPS, política de CORS adequada, gestão de segredos, backups testados, monitoramento e revisão de privacidade/LGPD. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
 
