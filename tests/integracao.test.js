@@ -177,9 +177,9 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
 
   const exportacao = await fetch(base + "/api/relatorios/doacoes.csv");
   assert.equal(exportacao.status, 200);
-  assert.match(exportacao.headers.get("content-type"), /text\\/csv/);
+  assert.ok(exportacao.headers.get("content-type")?.includes("text/csv"));
   const csv = await exportacao.text();
-  assert.match(csv, /'=2\\+2/);
+  assert.ok(csv.includes("'=2+2"));
 
   // Administradores podem executar a operação, mas a integridade referencial
   // continua impedindo a exclusão de um doador com doações vinculadas.
