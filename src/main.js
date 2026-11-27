@@ -104,7 +104,7 @@ function render() {
           <article><span>Distribuídas</span><strong>${resumo.doacoes.distribuidas || 0}</strong></article>
           <article><span>Canceladas</span><strong>${resumo.doacoes.canceladas || 0}</strong></article>
         </div>
-        <div class="cabecalho-secao historico-titulo"><div><h2>Últimas doações</h2><p>Registros mais recentes.</p></div><a class="botao secundario" href="/api/relatorios/doacoes.csv">Exportar CSV</a></div>
+        <div class="cabecalho-secao historico-titulo"><div><h2>Últimas doações</h2><p>Registros mais recentes.</p></div><button class="botao secundario" type="button" data-exportar-csv>Exportar CSV</button></div>
         ${renderHistorico(state.doacoes.slice(0, 5))}
       </section>
       <section class="painel" id="painel-doadores" ${state.aba !== "doadores" ? "hidden" : ""}>
@@ -155,6 +155,10 @@ function render() {
     sessionStorage.removeItem("maos_token");
     renderLogin();
   });
+  app.querySelectorAll("[data-exportar-csv]").forEach(b => b.addEventListener("click", async () => {
+    try { await exportarCSV(); }
+    catch (erro) { aviso(erro.message, "erro"); }
+  }));
   app.querySelectorAll("[data-aba]").forEach(b => b.addEventListener("click", () => mudarAba(b.dataset.aba)));
   document.querySelector("#atualizar")?.addEventListener("click", () => carregar().catch(e => aviso(e.message, "erro")));
   document.querySelector("#atualizar-doadores")?.addEventListener("click", () => carregar().catch(e => aviso(e.message, "erro")));
@@ -273,6 +277,24 @@ async function alterarStatus(id, status) {
     await carregar();
     aviso("Status atualizado e estoque sincronizado.");
   } catch (e) { aviso(e.message, "erro"); }
+}
+async function exportarCSV() {
+  const resposta = await fetch("/api/relatorios/doacoes.csv", {
+    headers: { Authorization: `Bearer ${state.token}` },
+  });
+  if (!resposta.ok) {
+    const dados = await resposta.json().catch(() => ({}));
+    throw new Error(dados.erro || "Não foi possível exportar o relatório.");
+  }
+  const arquivo = await resposta.blob();
+  const url = URL.createObjectURL(arquivo);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "relatorio-doacoes.csv";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function renderLogin(mensagem = "") {
   app.innerHTML = `<main class="login-wrap"><form id="form-login" class="login-card">
