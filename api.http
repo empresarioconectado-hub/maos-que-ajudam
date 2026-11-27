@@ -16,6 +16,18 @@ Content-Type: application/json
   "telefone": "11999999999"
 }
 
+### Teste HTTP 409: cadastrar novamente o mesmo e-mail (esperado 409)
+# Execute após o cadastro acima. Se o e-mail já existir de execução anterior,
+# o resultado 409 também é válido.
+POST {{baseUrl}}/api/doadores
+Content-Type: application/json
+
+{
+  "nome": "Ana Souza Duplicada",
+  "email": "ana.souza@example.com",
+  "telefone": "11999999998"
+}
+
 ### Consultar doador pelo ID
 GET {{baseUrl}}/api/doadores/1
 
@@ -51,6 +63,10 @@ Content-Type: application/json
     { "id_item": 4, "quantidade": 2 }
   ]
 }
+
+### Teste HTTP 409: excluir doador com doação vinculada (esperado 409)
+# Ajuste o ID para um doador que possua ao menos uma doação registrada.
+DELETE {{baseUrl}}/api/doadores/1
 
 ### Teste de validação: nome obrigatório (esperado 400)
 POST {{baseUrl}}/api/doadores
