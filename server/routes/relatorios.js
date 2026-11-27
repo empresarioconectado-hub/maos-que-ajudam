@@ -33,7 +33,7 @@ router.get("/resumo", async (_req, res) => {
 function campoCsv(valor) {
   let texto = String(valor ?? "");
   // Evita que planilhas interpretem conteúdo fornecido pelo usuário como fórmula.
-  if (/^[\\u0000-\\u0020]*[=+@-]/.test(texto)) texto = "'" + texto;
+  if (/^[\u0000-\u0020]*[=+@-]/.test(texto)) texto = "'" + texto;
   return '"' + texto.replace(/"/g, '""') + '"';
 }
 
