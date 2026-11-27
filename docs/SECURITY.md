@@ -12,7 +12,7 @@ O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente
 - Tratamento centralizado de erros sem exposição de SQL ou stack trace ao cliente.
 - Integridade referencial e restrições no banco.
 - Transações para registro de doação e atualização conjunta de status, estoque, movimentações e auditoria.
-- Validação de transições de status e bloqueio de saldo negativo.
+- Validação de transições de status e bloqueio de saldo negativo.\n- Ajustes manuais e configuração de limites de estoque restritos a administradores, com auditoria.
 - Neutralização de conteúdo perigoso na exportação CSV para reduzir CSV Injection.
 - Auditoria da criação e das mudanças de status de doações.
 - Limitação em memória de tentativas de login por endereço IP.
