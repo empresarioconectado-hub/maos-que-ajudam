@@ -39,6 +39,10 @@ jobs:
           cache: npm
       - name: Instalar dependências
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Instalar ferramenta de teste E2E
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund @playwright/test
+          npx playwright install --with-deps chromium
       - name: Preparar banco de testes
         run: |
           DB_CONTAINER="$(docker ps -q --filter ancestor=mariadb:10.11 | head -n 1)"
@@ -63,5 +67,13 @@ jobs:
         run: find server scripts tests -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Executar testes unitários e de integração
         run: npm test
+      - name: Criar conta administrativa isolada para E2E
+        env:
+          ADMIN_NAME: Administrador E2E
+          ADMIN_EMAIL: e2e-admin@exemplo.test
+          ADMIN_PASSWORD: Senha-E2E-forte-2026!
+        run: npm run admin:create
+      - name: Executar testes E2E no Chromium
+        run: npx playwright test
       - name: Gerar build do frontend
         run: npm run build
