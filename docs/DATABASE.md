@@ -125,6 +125,10 @@ O script atual é destinado à criação inicial. Não substitui uma ferramenta 
 
 Armazena contas utilizadas para autenticação, com e-mail único, hash de senha derivado por scrypt, perfil (`administrador` ou `operador`), indicador de conta ativa e data de criação. Senhas em texto puro não são armazenadas. A primeira conta é provisionada pelo comando `npm run admin:create`, sem credenciais padrão no schema ou no seed.
 
+### `sessao_usuario`
+
+Armazena os identificadores UUID das sessões autenticadas, a conta associada, a data de expiração e o instante de revogação. Cada requisição protegida valida a sessão no banco; logout marca a sessão como revogada e a revogação global encerra as sessões ativas da conta. A tabela é criada no schema completo e pela migração `005_sessoes_revogaveis.sql`.
+
 ## Gestão operacional (extensão)
 
 O modelo original do PIE II foi preservado. A gestão operacional foi acrescentada com estruturas complementares:
@@ -177,8 +181,9 @@ Para uma base já criada com a versão anterior do schema, faça backup e execut
 mariadb -u root -p maos_que_ajudam < database/migrations/002_gestao_operacional.sql
 mariadb -u root -p maos_que_ajudam < database/migrations/003_autenticacao.sql
 mariadb -u root -p maos_que_ajudam < database/migrations/004_limite_minimo_estoque.sql
+mariadb -u root -p maos_que_ajudam < database/migrations/005_sessoes_revogaveis.sql
 ```
 
-A migração 002 adiciona o status padrão `registrada`, cria as tabelas complementares e inicializa saldo zero para os itens existentes. A migração 003 cria a tabela de usuários e associa os eventos de auditoria às contas. A migração 004 adiciona a quantidade mínima e sua constraint. Todas verificam estruturas existentes e podem ser reexecutadas.
+A migração 002 adiciona o status padrão `registrada`, cria as tabelas complementares e inicializa saldo zero para os itens existentes. A migração 003 cria a tabela de usuários e associa os eventos de auditoria às contas. A migração 004 adiciona a quantidade mínima e sua constraint. A migração 005 cria o armazenamento de sessões revogáveis. Todas verificam estruturas existentes e podem ser reexecutadas.
 
 Para bancos novos, utilize o `database/schema.sql` atualizado. As migrações 002 e 003 agora verificam a existência de estruturas antes de criá-las e podem ser reexecutadas; ainda assim, faça backup antes de qualquer alteração em dados persistentes.
