@@ -153,7 +153,7 @@ function render() {
   }));
   document.querySelector("#form-doacao")?.addEventListener("submit", salvarDoacao);
   app.querySelectorAll("[data-status]").forEach(b => b.addEventListener("click", () => alterarStatus(Number(b.dataset.id), b.dataset.status)));
-  app.querySelectorAll("[data-comprovante]").forEach(b => b.addEventListener("click", () => imprimirComprovante(Number(b.dataset-comprovante))));
+  app.querySelectorAll("[data-comprovante]").forEach(b => b.addEventListener("click", () => imprimirComprovante(Number(b.dataset.comprovante))));
 }
 function renderHistorico(doacoes) {
   return `<div class="historico">${doacoes.map(d => {
