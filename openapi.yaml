@@ -15,6 +15,22 @@ tags:
   - name: Itens
   - name: Doações
 paths:
+  /api/health/live:
+    get:
+      tags: [Saúde]
+      summary: Verifica se o processo HTTP está ativo
+      responses:
+        '200':
+          description: Processo ativo
+  /api/health/ready:
+    get:
+      tags: [Saúde]
+      summary: Verifica se o banco está disponível
+      responses:
+        '200':
+          description: Banco disponível
+        '500':
+          $ref: '#/components/responses/ErroInterno'
   /api/health:
     get:
       tags: [Saúde]
@@ -35,7 +51,21 @@ paths:
   /api/doadores:
     get:
       tags: [Doadores]
-      summary: Lista todos os doadores
+      summary: Lista doadores; aceita pesquisa e paginação opcionais
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: q
+          in: query
+          required: false
+          description: Pesquisa parcial por nome, e-mail ou telefone
+          schema: { type: string, maxLength: 100 }
       responses:
         '200':
           description: Lista de doadores
@@ -194,6 +224,7 @@ components:
       type: object
       properties:
         erro: { type: string, example: Requisição inválida }
+        requestId: { type: string, format: uuid }
       required: [erro]
     Doador:
       type: object
