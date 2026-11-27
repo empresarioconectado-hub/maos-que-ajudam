@@ -14,9 +14,15 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
 
   const emailOperador = `operador-${Date.now()}@exemplo.test`;
   const hashSenha = await gerarHashSenha("Senha-forte-para-teste-2026!");
+  const emailAdmin = `admin-${Date.now()}@exemplo.test`;
+  const hashAdmin = await gerarHashSenha("Outra-senha-forte-para-teste-2026!");
   await pool.execute(
     "INSERT INTO usuario (nome, email, senha_hash, perfil) VALUES (?, ?, ?, 'operador')",
     ["Operador de teste", emailOperador, hashSenha],
+  );
+  await pool.execute(
+    "INSERT INTO usuario (nome, email, senha_hash, perfil) VALUES (?, ?, ?, 'administrador')",
+    ["Administrador de teste", emailAdmin, hashAdmin],
   );
 
   const servidor = app.listen(0);
@@ -146,10 +152,12 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   assert.ok(resumo.body.doacoes.distribuidas >= 1);
 
   const [auditoria] = await pool.execute(
-    "SELECT COUNT(*) AS total FROM auditoria WHERE entidade = 'doacao' AND id_entidade = ?",
-    [doacao.body.id_doacao],
+    "SELECT COUNT(*) AS total, SUM(id_usuario = ?) AS eventos_usuario " +
+    "FROM auditoria WHERE entidade = 'doacao' AND id_entidade = ?",
+    [login.body.usuario.id_usuario, doacao.body.id_doacao],
   );
   assert.ok(auditoria[0].total >= 2);
+  assert.ok(Number(auditoria[0].eventos_usuario) >= 2);
   const [movimentacoes] = await pool.execute(
     "SELECT tipo, quantidade FROM movimentacao_estoque WHERE origem = 'doacao' AND id_referencia = ? ORDER BY id_movimentacao",
     [doacao.body.id_doacao],
@@ -161,4 +169,15 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   assert.match(exportacao.headers.get("content-type"), /text\\/csv/);
   const csv = await exportacao.text();
   assert.match(csv, /'=2\\+2/);
+
+  // Administradores podem executar a operação, mas a integridade referencial
+  // continua impedindo a exclusão de um doador com doações vinculadas.
+  const loginAdmin = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: emailAdmin, senha: "Outra-senha-forte-para-teste-2026!" }),
+  });
+  assert.equal(loginAdmin.status, 200);
+  token = loginAdmin.body.token;
+  const exclusaoComAdmin = await request(`/api/doadores/${idDoador}`, { method: "DELETE" });
+  assert.equal(exclusaoComAdmin.status, 409);
 });
