@@ -5,8 +5,8 @@ const LIMITE_MAXIMO = 100;
 
 export function lerPaginacao(query = {}) {
   const possuiPaginacao = query.page !== undefined || query.limit !== undefined;
-  const pageValido = query.page === undefined || (typeof query.page === "string" && /^[1-9]\\d*$/.test(query.page));
-  const limitValido = query.limit === undefined || (typeof query.limit === "string" && /^[1-9]\\d*$/.test(query.limit));
+  const pageValido = query.page === undefined || (typeof query.page === "string" && /^[1-9]\d*$/.test(query.page));
+  const limitValido = query.limit === undefined || (typeof query.limit === "string" && /^[1-9]\d*$/.test(query.limit));
   const page = query.page === undefined ? 1 : Number(query.page);
   const limit = query.limit === undefined ? LIMITE_PADRAO : Number(query.limit);
 
