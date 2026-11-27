@@ -58,7 +58,7 @@ O fluxo de doação possui transições controladas. O registro inicial cria uma
 
 A atualização do status, do saldo, da movimentação e do registro de auditoria ocorre em uma única transação InnoDB. Em caso de falha, toda a operação é revertida.
 
-Os relatórios são consultas agregadas no backend. A exportação CSV neutraliza valores que poderiam ser interpretados como fórmulas por planilhas.
+Os relatórios são consultas agregadas no backend. A exportação CSV neutraliza valores que poderiam ser interpretados como fórmulas por planilhas; a versão para PDF usa a impressão do navegador com os dados já carregados na interface.
 
 ## Limitações de segurança
 
