@@ -1,90 +1,49 @@
 # Arquitetura da aplicação
 
-## Objetivo
+## Visão geral
 
-O Mãos que Ajudam é uma aplicação web para manter doadores, consultar o catálogo de itens e registrar doações. A implementação separa a interface, a API e a persistência para manter responsabilidades claras e facilitar a evolução do sistema.
-
-## Visão lógica
+O Mãos que Ajudam é uma aplicação web composta por frontend JavaScript, API REST em Node.js/Express e persistência MariaDB/MySQL.
 
 ```text
-Navegador
-   |
-   | HTTP / JSON
-   v
-Frontend (Vite + JavaScript)
-   |
-   | /api/*
-   v
-API REST (Node.js + Express)
-   |
-   | mysql2/promise
-   v
-MariaDB / MySQL
+Navegador → Vite / Frontend → API Express → Pool mysql2 → MariaDB
 ```
-
-No ambiente de desenvolvimento, o servidor Vite atende a interface e encaminha as requisições iniciadas por `/api` para o Express. O backend escuta, por padrão, na porta 3000.
 
 ## Responsabilidades
 
-### Interface — `src/`
+- `src/`: interface e interação com a API.
+- `server/routes/`: endpoints organizados por recurso.
+- `server/validacao.js`: validação e normalização de dados de entrada.
+- `server/paginacao.js`: validação de parâmetros e metadados de paginação.
+- `server/db.js`: pool de conexões com o banco.
+- `database/`: schema e carga de demonstração.
+- `tests/`: testes automatizados unitários.
 
-- Renderiza as áreas de doadores, doações e catálogo.
-- Envia e recebe dados em JSON por meio da API.
-- Apresenta mensagens de sucesso e falha.
-- Mantém o estado de interface necessário durante a navegação.
+## Disponibilidade
 
-### API — `server/`
+A API expõe verificações distintas:
 
-- Expõe os endpoints REST.
-- Valida e normaliza dados de entrada.
-- Executa consultas parametrizadas.
-- Controla transações para registrar doações e seus itens.
-- Converte erros conhecidos em respostas HTTP padronizadas.
+- `/api/health/live`: indica que o processo HTTP está ativo.
+- `/api/health/ready`: confirma que o banco responde.
+- `/api/health`: mantém a resposta de saúde utilizada anteriormente.
 
-### Persistência — `database/`
+## Requisições e erros
 
-- Define tabelas, relacionamentos, restrições e índices.
-- Fornece dados opcionais de demonstração.
-- Utiliza InnoDB para suportar transações e integridade referencial.
+Cada requisição recebe um identificador UUID no cabeçalho `X-Request-Id). O identificador também é incluído nas respostas de erro para facilitar a correlação com os logs. O servidor desativa a identificação padrão do Express e envia cabeçalhos básicos de proteção.
 
-## Fluxo de registro de doação
+O encerramento por SIGINT/SIGTERM fecha o servidor HTTP e encerra o pool de conexões para evitar interrupções abruptas durante o desligamento.
 
-1. O usuário seleciona um doador, uma data e pelo menos um item.
-2. O frontend envia os dados para `POST /api/doacoes`.
-3. A API valida os campos e os itens.
-4. O backend inicia uma transação no banco.
-5. Insere o registro em `doacao` e cada item em `doacao_item`.
-6. Se todas as inserções forem concluídas, confirma a transação (`COMMIT`).
-7. Se ocorrer falha, reverte a transação (`ROLLBACK`) e devolve uma resposta de erro.
+## Paginação
 
-Esse fluxo evita que o banco mantenha o registro principal sem os respectivos itens quando uma operação falha.
+A listagem de doadores aceita pesquisa e paginação opcionais. Sem parâmetros, mantém o formato de array utilizado pela versão anterior. Com `page`, `limit` ou `q`, retorna `data` e `pagination`. O limite máximo é 100 registros por página.
 
-## Organização dos diretórios
+## Fluxo transacional de doação
 
-| Caminho | Responsabilidade |
-|---|---|
-| `src/` | Interface web e estilos |
-| `public/` | Recursos estáticos |
-| `server/index.js` | Inicialização do Express e middlewares |
-| `server/routes/` | Rotas de doadores, itens e doações |
-| `server/validacao.js` | Validação e normalização de dados |
-| `server/erros.js` | Classe de erro HTTP da aplicação |
-| `server/db.js` | Pool de conexões MariaDB/MySQL |
-| `database/schema.sql` | Estrutura relacional |
-| `database/seed.sql` | Dados fictícios de demonstração |
-| `tests/` | Testes automatizados |
-| `openapi.yaml` | Contrato da API |
-| `api.http` | Requisições para testes manuais |
+1. A API valida os dados recebidos.
+2. Abre uma transação no banco.
+3. Insere a doação e seus itens.
+4. Confirma a transação se todas as operações forem concluídas.
+5. Reverte a transação se ocorrer falha.
 
-## Decisões técnicas
+## Limites conhecidos
 
-- **API REST e JSON:** interface e backend se comunicam por HTTP, com recursos organizados por domínio.
-- **Pool de conexões:** o módulo de banco reutiliza conexões e limita o número simultâneo.
-- **Consultas parametrizadas:** valores externos são enviados separadamente da instrução SQL.
-- **Integridade no banco:** chaves estrangeiras e restrições protegem relacionamentos mesmo quando uma operação não passa pela interface.
-- **Transação nas doações:** o registro e seus itens formam uma única unidade lógica.
-- **Contrato OpenAPI:** descreve endpoints, parâmetros, corpos e respostas esperadas.
-
-## Limites da arquitetura atual
-
-A aplicação ainda não implementa autenticação, autorização, segregação por organização, camada de serviços independente, migrações versionadas ou configuração completa de produção. A estrutura atual é adequada ao escopo acadêmico e pode evoluir com esses componentes quando houver requisitos definidos.
+A aplicação ainda não possui autenticação/autorização, estoque operacional, fluxo de distribuição, auditoria de alterações de negócio, migrações versionadas ou testes de integração automatizados com MariaDB. Os cabeçalhos HTTP implementados são uma camada básica e não substituem HTTPS, política de CORS por ambiente, controle de acesso ou uma revisão de segurança antes da publicação.
