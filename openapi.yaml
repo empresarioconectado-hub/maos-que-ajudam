@@ -1,0 +1,279 @@
+openapi: 3.0.3
+info:
+  title: API Mãos que Ajudam
+  version: 1.0.0
+  description: >
+    Contrato OpenAPI reconstruído a partir da implementação atual da Atividade 2
+    (PIE II). O contrato original do PIE I não foi localizado no repositório;
+    revise nomes e formatos caso exista uma versão anterior oficial.
+servers:
+  - url: http://localhost:3000
+    description: Ambiente local
+tags:
+  - name: Saúde
+  - name: Doadores
+  - name: Itens
+  - name: Doações
+paths:
+  /api/health:
+    get:
+      tags: [Saúde]
+      summary: Verifica a API e a conexão com o banco
+      responses:
+        '200':
+          description: API e banco disponíveis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  database: { type: string, example: connected }
+                  timestamp: { type: string, format: date-time }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+  /api/doadores:
+    get:
+      tags: [Doadores]
+      summary: Lista todos os doadores
+      responses:
+        '200':
+          description: Lista de doadores
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Doador' }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+    post:
+      tags: [Doadores]
+      summary: Cadastra um doador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NovoDoador' }
+      responses:
+        '201':
+          description: Doador criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Doador' }
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '409':
+          description: E-mail ou registro duplicado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+  /api/doadores/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Doadores]
+      summary: Consulta um doador pelo identificador
+      responses:
+        '200':
+          description: Doador encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Doador' }
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+    put:
+      tags: [Doadores]
+      summary: Atualiza os dados de um doador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NovoDoador' }
+      responses:
+        '200':
+          description: Doador atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Doador' }
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
+        '409':
+          description: E-mail ou registro duplicado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+    delete:
+      tags: [Doadores]
+      summary: Exclui um doador sem registros vinculados
+      responses:
+        '204':
+          description: Doador excluído sem corpo de resposta
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
+        '409':
+          description: Exclusão bloqueada por doações vinculadas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+  /api/itens:
+    get:
+      tags: [Itens]
+      summary: Lista o catálogo de itens e suas categorias
+      responses:
+        '200':
+          description: Catálogo de itens
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ItemCatalogo' }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+  /api/doacoes:
+    get:
+      tags: [Doações]
+      summary: Lista doações com doador e itens agrupados
+      responses:
+        '200':
+          description: Lista de doações
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DoacaoDetalhada' }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+    post:
+      tags: [Doações]
+      summary: Registra uma doação e seus itens em transação única
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NovaDoacao' }
+      responses:
+        '201':
+          description: Doação registrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string, example: Doação registrada com sucesso }
+                  id_doacao: { type: integer, example: 12 }
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador inteiro positivo do doador
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    Erro:
+      type: object
+      properties:
+        erro: { type: string, example: Requisição inválida }
+      required: [erro]
+    Doador:
+      type: object
+      properties:
+        id_doador: { type: integer, example: 1 }
+        nome: { type: string, maxLength: 150, example: Ana Souza }
+        email: { type: string, nullable: true, maxLength: 100, example: ana@example.com }
+        telefone: { type: string, nullable: true, maxLength: 20, example: '11999999999' }
+        data_cadastro: { type: string, format: date-time }
+      required: [id_doador, nome, data_cadastro]
+    NovoDoador:
+      type: object
+      properties:
+        nome: { type: string, minLength: 1, maxLength: 150 }
+        email: { type: string, nullable: true, maxLength: 100, format: email }
+        telefone: { type: string, nullable: true, maxLength: 20 }
+      required: [nome]
+    ItemCatalogo:
+      type: object
+      properties:
+        id_item: { type: integer }
+        nome: { type: string }
+        unidade: { type: string }
+        id_categoria: { type: integer }
+        categoria: { type: string }
+      required: [id_item, nome, unidade, id_categoria, categoria]
+    ItemDoacao:
+      type: object
+      properties:
+        id_item: { type: integer, minimum: 1 }
+        nome: { type: string }
+        quantidade: { type: integer, minimum: 1 }
+        unidade: { type: string }
+      required: [id_item, nome, quantidade, unidade]
+    DoadorResumo:
+      type: object
+      properties:
+        id_doador: { type: integer }
+        nome: { type: string }
+      required: [id_doador, nome]
+    DoacaoDetalhada:
+      type: object
+      properties:
+        id_doacao: { type: integer }
+        data_doacao: { type: string, format: date }
+        observacao: { type: string, nullable: true }
+        doador: { $ref: '#/components/schemas/DoadorResumo' }
+        itens:
+          type: array
+          items: { $ref: '#/components/schemas/ItemDoacao' }
+      required: [id_doacao, data_doacao, doador, itens]
+    NovaDoacao:
+      type: object
+      properties:
+        id_doador: { type: integer, minimum: 1 }
+        data_doacao: { type: string, format: date, example: '2026-11-27' }
+        observacao: { type: string, nullable: true, maxLength: 255 }
+        itens:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              id_item: { type: integer, minimum: 1 }
+              quantidade: { type: integer, minimum: 1 }
+            required: [id_item, quantidade]
+      required: [id_doador, data_doacao, itens]
+  responses:
+    RequisicaoInvalida:
+      description: Dados inválidos, JSON malformado ou referência inexistente
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    NaoEncontrado:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    ErroInterno:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
