@@ -44,6 +44,12 @@ test("rejeita quantidade não positiva, item inválido ou item repetido", () => 
   assert.match(validarDoacao({ ...base, itens: [{ id_item: 1, quantidade: 1 }, { id_item: 1, quantidade: 2 }] }), /repetir itens/);
 });
 
+test("rejeita quantidades acima do limite INT do banco e listas excessivas", () => {
+  const base = { id_doador: 1, data_doacao: "2026-11-27" };
+  assert.match(validarDoacao({ ...base, itens: [{ id_item: 1, quantidade: 2147483648 }] }), /quantidade/);
+  assert.match(validarDoacao({ ...base, itens: Array.from({ length: 101 }, (_, i) => ({ id_item: i + 1, quantidade: 1 })) }), /1 e 100/);
+});
+
 test("rejeita observação acima do limite", () => {
   assert.match(validarDoacao({
     id_doador: 1,
