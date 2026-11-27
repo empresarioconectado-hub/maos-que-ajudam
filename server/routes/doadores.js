@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { exigirPerfil } from "../auth.js";
 import pool from "../db.js";
 import { HttpError } from "../erros.js";
 import { normalizarDoador, validarDoador } from "../validacao.js";
@@ -98,7 +99,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/doadores/:id
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", exigirPerfil("administrador"), async (req, res) => {
   const id = validarId(req.params.id);
   if (!id) throw new HttpError(400, "ID inválido");
   const [resultado] = await pool.execute(
