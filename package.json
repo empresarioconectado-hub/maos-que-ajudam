@@ -22,12 +22,5 @@
   },
   "overrides": {
     "vite": "npm:@voidzero-dev/vite-plus-core@8.3.8001"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "npm",
-      "version": "10.9.3",
-      "onFail": "download"
-    }
   }
 }
