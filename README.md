@@ -61,7 +61,7 @@ DB_USER=maos_app
 DB_PASSWORD=sua_senha_local
 DB_NAME=maos_que_ajudam
 PORT=3000
-AUTH_SECRET=gere_um_segredo_aleatorio_com_ao_menos_32_bytes
+AUTH_SECRET=
 ```
 
 Crie um usuário de banco dedicado e conceda apenas as permissões necessárias. Não use a conta administrativa em uma instalação compartilhada.
