@@ -125,6 +125,16 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   assert.equal(doacao.status, 201);
   assert.equal(doacao.body.status, "registrada");
 
+  const historicoLegado = await request("/api/doacoes");
+  assert.equal(historicoLegado.status, 200);
+  assert.ok(Array.isArray(historicoLegado.body));
+  const historicoPaginado = await request("/api/doacoes?page=1&limit=1");
+  assert.equal(historicoPaginado.status, 200);
+  assert.equal(historicoPaginado.body.data.length, 1);
+  assert.ok(historicoPaginado.body.pagination.total >= 1);
+  const paginacaoInvalida = await request("/api/doacoes?page=0");
+  assert.equal(paginacaoInvalida.status, 400);
+
   const recebimento = await request(`/api/doacoes/${doacao.body.id_doacao}/status`, {
     method: "PATCH", body: JSON.stringify({ status: "recebida" }),
   });
