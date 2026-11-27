@@ -2,7 +2,7 @@
 
 ## Situação atual
 
-O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente nem utilizado com dados pessoais reais. A API ainda não possui autenticação ou autorização. Portanto, qualquer pessoa com acesso à rede onde o serviço está publicado pode tentar executar as operações disponíveis.
+O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente nem utilizado com dados pessoais reais. A API exige token Bearer para os recursos de negócio. O login utiliza hash de senha scrypt, tokens assinados por HMAC-SHA-256 com expiração de oito horas e perfis `administrador` e `operador`. A exclusão de doadores é restrita ao administrador.
 
 ## Controles implementados
 
@@ -15,12 +15,16 @@ O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente
 - Validação de transições de status e bloqueio de saldo negativo.
 - Neutralização de conteúdo perigoso na exportação CSV para reduzir CSV Injection.
 - Auditoria da criação e das mudanças de status de doações.
+- Limitação em memória de tentativas de login por endereço IP.
+- Segredo de assinatura obrigatório na inicialização, com tamanho mínimo de 32 bytes.
+- Provisionamento inicial de contas por comando administrativo, sem senha padrão.
 
 ## Limitações relevantes
 
-- Não há login, sessão, recuperação de senha ou controle de perfil.
-- A auditoria não identifica o operador, pois não existe identidade autenticada.
-- Não há rate limiting, política CORS restritiva ou proteção contra abuso.
+- Não há recuperação de senha, MFA ou revogação individual imediata de tokens já emitidos.
+- A auditoria ainda não associa cada evento ao usuário autenticado.
+- O limitador de login é local ao processo e não compartilha estado entre instâncias.
+- Não há política CORS explícita por allowlist nem proteção distribuída contra abuso.
 - Não há implantação HTTPS, gestão de segredos em ambiente de produção ou monitoramento externo.
 - A adequação à LGPD depende de definição institucional de finalidade, base legal, retenção, transparência e atendimento aos titulares.
 
@@ -35,10 +39,10 @@ O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente
 
 ## Requisitos antes de produção
 
-1. Definir perfis e permissões com os responsáveis pelo processo.
-2. Implementar autenticação e autorização, incluindo proteção das rotas de escrita e auditoria.
-3. Configurar HTTPS, CORS por allowlist e rate limiting.
-4. Utilizar gestão segura de segredos.
+1. Adicionar MFA e política de revogação de tokens/sessões.
+2. Vincular os eventos de auditoria ao usuário autenticado.
+3. Configurar HTTPS, CORS por allowlist e rate limiting distribuído.
+4. Utilizar gestão segura e rotação de segredos.
 5. Implementar backup automatizado e testar restauração.
 6. Configurar monitoramento e alertas.
 7. Realizar análise de dependências e testes de segurança.
