@@ -5,7 +5,7 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 ## Funcionalidades
 
 - Cadastro, consulta, edição e exclusão de doadores.
-- Pesquisa de doadores por nome, e-mail ou telefone.
+- Pesquisa e paginação opcional de doadores e paginação opcional do histórico de doações.
 - Paginação opcional da listagem de doadores.
 - Consulta do catálogo de itens por categoria.
 - Registro de doações com data, observação e múltiplos itens.
