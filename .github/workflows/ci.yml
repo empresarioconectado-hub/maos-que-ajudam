@@ -37,25 +37,25 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Instalar cliente MariaDB
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mariadb-client
       - name: Instalar dependências
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
       - name: Preparar banco de testes
         run: |
+          DB_CONTAINER="$(docker ps -q --filter ancestor=mariadb:10.11 | head -n 1)"
+          test -n "$DB_CONTAINER"
           # A atividade exige que o schema possa ser executado mais de uma vez.
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot < database/schema.sql
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot < database/schema.sql
-          # A migração deve funcionar tanto em bases antigas quanto no schema atual.
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
-          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/seed.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot < database/schema.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot < database/schema.sql
+          # Confirma a reexecução das migrações sem duplicar estruturas.
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
         run: npm run prepare
+      - name: Verificar sintaxe JavaScript
+        run: find server scripts tests -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Executar testes unitários e de integração
         run: npm test
       - name: Gerar build do frontend
