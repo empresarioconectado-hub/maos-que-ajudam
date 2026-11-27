@@ -71,7 +71,7 @@ Retorna o catálogo ordenado por categoria e nome.
 
 ### `GET /api/doacoes`
 
-Retorna doações com os dados resumidos do doador e seus itens.
+Retorna doações com os dados resumidos do doador e seus itens. Sem parâmetros, mantém a resposta em array para compatibilidade. Com `page` e/ou `limit`, retorna `data` e metadados `pagination`; o limite padrão é 20 e o máximo é 100.
 
 ### `POST /api/doacoes`
 
