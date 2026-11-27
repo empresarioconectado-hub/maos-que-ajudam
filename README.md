@@ -115,3 +115,15 @@ A rota de doações valida todos os dados e grava a doação e seus itens em uma
 ## Testes manuais
 
 Com a API em execução, abra \`api.http\` no VS Code com a extensão REST Client. Execute as requisições em sequência e ajuste os IDs conforme as respostas do banco. O arquivo inclui testes de CRUD, validação, integridade referencial e rollback.
+
+## Contrato OpenAPI
+
+O contrato da API está em `openapi.yaml` (OpenAPI 3.0.3), incluindo os endpoints de saúde, doadores, catálogo de itens e doações. Ele foi reconstruído com base na implementação atual da Atividade 2 porque o arquivo original do PIE I não estava presente no repositório. Se houver um contrato oficial anterior, compare-o e preserve eventuais convenções exigidas pela disciplina.
+
+## Cenários HTTP 409
+
+O arquivo `api.http` contém dois cenários explícitos:
+- Cadastro de doador com e-mail já utilizado (esperado HTTP 409).
+- Exclusão de doador que possui doação vinculada (esperado HTTP 409).
+
+Execute o primeiro após a requisição de cadastro com o mesmo e-mail. Para o segundo, ajuste o ID para um doador que realmente possua doação. O resultado depende dos dados existentes no banco.
