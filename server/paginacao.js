@@ -5,13 +5,15 @@ const LIMITE_MAXIMO = 100;
 
 export function lerPaginacao(query = {}) {
   const possuiPaginacao = query.page !== undefined || query.limit !== undefined;
+  const pageValido = query.page === undefined || (typeof query.page === "string" && /^[1-9]\\d*$/.test(query.page));
+  const limitValido = query.limit === undefined || (typeof query.limit === "string" && /^[1-9]\\d*$/.test(query.limit));
   const page = query.page === undefined ? 1 : Number(query.page);
   const limit = query.limit === undefined ? LIMITE_PADRAO : Number(query.limit);
 
-  if (!Number.isSafeInteger(page) || page < 1) {
+  if (!pageValido || !Number.isSafeInteger(page) || page < 1) {
     throw new HttpError(400, "O parâmetro page deve ser um inteiro maior que zero");
   }
-  if (!Number.isSafeInteger(limit) || limit < 1 || limit > LIMITE_MAXIMO) {
+  if (!limitValido || !Number.isSafeInteger(limit) || limit < 1 || limit > LIMITE_MAXIMO) {
     throw new HttpError(400, `O parâmetro limit deve estar entre 1 e ${LIMITE_MAXIMO}`);
   }
 
