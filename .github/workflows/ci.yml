@@ -38,13 +38,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Instalar dependências
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Exportar lockfile resolvido para sincronização
-        run: |
-          echo LOCKFILE_BASE64_BEGIN
-          base64 -w0 package-lock.json
-          echo
-          echo LOCKFILE_BASE64_END
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Preparar banco de testes
         run: |
           DB_CONTAINER="$(docker ps -q --filter ancestor=mariadb:10.11 | head -n 1)"
