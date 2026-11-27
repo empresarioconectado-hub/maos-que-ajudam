@@ -13,6 +13,12 @@ import relatoriosRoutes from "./routes/relatorios.js";
 
 const app = express();
 app.disable("x-powered-by");
+app.set("trust proxy", process.env.TRUST_PROXY === "1");
+
+const origensPermitidas = new Set(
+  (process.env.CORS_ORIGINS || "").split(",").map(origem => origem.trim()).filter(Boolean)
+);
+
 app.use((req, res, next) => {
   req.requestId = randomUUID();
   res.set({
@@ -20,13 +26,33 @@ app.use((req, res, next) => {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
     "X-Frame-Options": "DENY",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
     "Cache-Control": "no-store",
   });
+  if (process.env.ENABLE_HSTS === "1") {
+    res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+
+  const origem = req.get("Origin");
+  if (origem) {
+    res.vary("Origin");
+    if (!origensPermitidas.has(origem)) {
+      return res.status(403).json({ erro: "Origem não autorizada", requestId: req.requestId });
+    }
+    res.set("Access-Control-Allow-Origin", origem);
+    res.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id");
+    res.set("Access-Control-Max-Age", "600");
+    if (req.method === "OPTIONS") return res.status(204).end();
+  } else if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
   next();
 });
+
 app.use(express.json({ limit: "100kb", strict: true }));
 
-// Liveness não depende do banco; readiness verifica a dependência de persistência.
 app.get("/api/health/live", (_req, res) => res.json({ status: "ok" }));
 app.get("/api/health/ready", async (_req, res) => {
   await pool.execute("SELECT 1");
@@ -73,12 +99,8 @@ app.use((erro, req, res, _next) => {
     return res.status(erro.status).json({ erro: "Requisição inválida", requestId: req.requestId });
   }
   console.error(JSON.stringify({
-    level: "error",
-    message: "Falha não tratada na API",
-    requestId: req.requestId,
-    method: req.method,
-    path: req.path,
-    error: erro.message,
+    level: "error", message: "Falha não tratada na API",
+    requestId: req.requestId, method: req.method, path: req.path, error: erro.message,
   }));
   return res.status(500).json({ erro: "Erro interno no servidor", requestId: req.requestId });
 });
