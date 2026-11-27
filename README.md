@@ -6,15 +6,14 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 
 - Cadastro, consulta, edição e exclusão de doadores.
 - Pesquisa e paginação opcional de doadores e paginação opcional do histórico de doações.
-- Paginação opcional da listagem de doadores.
 - Consulta do catálogo de itens por categoria.
 - Registro de doações com data, observação e múltiplos itens.
 - Histórico de doações com ciclo de status (registrada, recebida, distribuída ou cancelada).
 - Controle de saldo por item, com movimentações de entrada e saída vinculadas às doações.
 - Trilha de auditoria para doações, ajustes de estoque e configuração de limites, vinculada ao usuário autenticado.
 - Dashboard com indicadores operacionais.
-- Exportação do histórico em CSV.
-- Comprovante de doação pronto para impressão ou salvamento em PDF pelo navegador.
+- Exportação de relatórios em CSV e relatório geral para impressão/salvamento em PDF.
+- Comprovante individual de doação para impressão ou salvamento em PDF pelo navegador.
 - Validação de dados no backend e transação para registrar doações.
 - Verificações de liveness e readiness da API.
 - Login com senha protegida por scrypt e token Bearer com expiração de 8 horas.
@@ -108,7 +107,6 @@ mariadb -u root -p < database/seed.sql
 | GET | `/api/relatorios/resumo` | Indicadores gerenciais |
 | GET | `/api/relatorios/doacoes.csv` | Exportação CSV |
 | PATCH | `/api/doacoes/:id/status` | Atualização controlada do ciclo da doação |
-| GET | `/api/estoque/movimentacoes` | Histórico de entradas e saídas |
 
 Com exceção das verificações de saúde e do login, os endpoints exigem `Authorization: Bearer <token>`. O token expira em oito horas. Os perfis disponíveis são `administrador` e `operador`; somente administradores podem excluir doadores.
 
