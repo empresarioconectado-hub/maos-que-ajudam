@@ -67,7 +67,7 @@ Quando `page` ou `limit` é informado, ou quando existe o parâmetro `q`, a resp
 
 Retorna o catálogo ordenado por categoria e nome.
 
-## Doações
+## Estoque\n\n- `GET /api/estoque`: saldo atual, limite mínimo e indicador de reposição.\n- `GET /api/estoque/movimentacoes?limit=50`: histórico recente de entradas e saídas.\n- `POST /api/estoque/movimentacoes`: registra ajuste manual de entrada ou saída; exige perfil `administrador`. A operação de saldo, movimentação e auditoria é transacional.\n- `PATCH /api/estoque/{id}/limite-minimo`: configura o limite de alerta; zero desativa o alerta e exige perfil `administrador`.\n\n## Doações
 
 ### `GET /api/doacoes`
 
