@@ -15,7 +15,7 @@ test("calcula deslocamento e limita a página", () => {
 });
 
 test("rejeita página e limite inválidos", () => {
-  for (const query of [{ page: "0" }, { page: "-1" }, { page: "1.5" }, { limit: "0" }, { limit: "101" }, { limit: "abc" }]) {
+  for (const query of [{ page: "0" }, { page: "-1" }, { page: "1.5" }, { page: "1e3" }, { limit: "0" }, { limit: "101" }, { limit: "abc" }, { limit: "2.0" }]) {
     assert.throws(() => lerPaginacao(query), { status: 400 });
   }
 });
