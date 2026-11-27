@@ -95,8 +95,9 @@ router.post("/", async (req, res) => {
 // Transições válidas: registrada -> recebida/cancelada; recebida -> distribuida.
 // A movimentação do estoque e a auditoria são confirmadas na mesma transação.
 router.patch("/:id/status", async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isSafeInteger(id) || id <= 0) throw new HttpError(400, "ID da doação inválido");
+  const idTexto = req.params.id;
+  const id = Number(idTexto);
+  if (!/^[1-9]\\d*$/.test(idTexto) || !Number.isSafeInteger(id) || id <= 0) throw new HttpError(400, "ID da doação inválido");
   const { status } = req.body ?? {};
   if (!STATUS_VALIDOS.has(status)) {
     throw new HttpError(400, "Status inválido. Utilize recebida, distribuida ou cancelada");
