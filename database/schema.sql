@@ -116,9 +116,13 @@ CREATE TABLE IF NOT EXISTS auditoria (
   id_entidade BIGINT NOT NULL,
   acao VARCHAR(50) NOT NULL,
   detalhes JSON NULL,
+  id_usuario INT NULL,
   criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY idx_auditoria_entidade (entidade, id_entidade),
-  KEY idx_auditoria_data (criado_em)
+  KEY idx_auditoria_data (criado_em),
+  KEY idx_auditoria_usuario (id_usuario),
+  CONSTRAINT fk_auditoria_usuario FOREIGN KEY (id_usuario)
+    REFERENCES usuario (id_usuario) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO estoque (id_item, quantidade_atual)
