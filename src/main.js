@@ -129,7 +129,7 @@ function render() {
           <ul>${state.itemSelecionado.map((x,n) => `<li>${esc(x.nome)} — ${x.quantidade} ${esc(x.unidade)} <button type="button" class="link perigo" data-remover-item="${n}">Remover</button></li>`).join("") || '<li class="vazio">Nenhum item adicionado.</li>'}</ul></div>
           <div class="acoes"><button class="botao primario" type="submit">Registrar doação</button></div>
         </form>
-        <div class="cabecalho-secao historico-titulo"><div><h2>Histórico de doações</h2><p>Atualize o andamento conforme o recebimento e a distribuição.</p></div><a class="botao secundario" href="/api/relatorios/doacoes.csv">Exportar CSV</a></div>
+        <div class="cabecalho-secao historico-titulo"><div><h2>Histórico de doações</h2><p>Atualize o andamento conforme o recebimento e a distribuição.</p></div><button class="botao secundario" type="button" data-exportar-csv>Exportar CSV</button></div>
         ${renderHistorico(state.doacoes)}
       </section>
       <section class="painel" id="painel-estoque" ${state.aba !== "estoque" ? "hidden" : ""}>
