@@ -25,6 +25,8 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     return { status: response.status, body: response.status === 204 ? null : await response.json() };
   };
 
+  const live = await request("/api/health/live");
+  assert.equal(live.status, 200);
   const health = await request("/api/health/ready");
   assert.equal(health.status, 200);
   assert.equal(health.body.database, "connected");
@@ -32,10 +34,15 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   const email = `integracao-${Date.now()}@exemplo.test`;
   const cadastro = await request("/api/doadores", {
     method: "POST",
-    body: JSON.stringify({ nome: "Doador de Integração", email }),
+    body: JSON.stringify({ nome: "=2+2", email }),
   });
   assert.equal(cadastro.status, 201);
   const idDoador = cadastro.body.id_doador;
+  const duplicado = await request("/api/doadores", {
+    method: "POST",
+    body: JSON.stringify({ nome: "Duplicado", email }),
+  });
+  assert.equal(duplicado.status, 409);
 
   const doacao = await request("/api/doacoes", {
     method: "POST",
@@ -77,4 +84,10 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     [doacao.body.id_doacao],
   );
   assert.ok(auditoria[0].total >= 2);
+
+  const exportacao = await fetch(base + "/api/relatorios/doacoes.csv");
+  assert.equal(exportacao.status, 200);
+  assert.match(exportacao.headers.get("content-type"), /text\\/csv/);
+  const csv = await exportacao.text();
+  assert.match(csv, /'=2\\+2/);
 });
