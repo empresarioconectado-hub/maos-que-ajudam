@@ -47,3 +47,16 @@ A listagem de doadores aceita pesquisa e paginação opcionais. Sem parâmetros,
 ## Limites conhecidos
 
 A aplicação ainda não possui autenticação/autorização, estoque operacional, fluxo de distribuição, auditoria de alterações de negócio, migrações versionadas ou testes de integração automatizados com MariaDB. Os cabeçalhos HTTP implementados são uma camada básica e não substituem HTTPS, política de CORS por ambiente, controle de acesso ou uma revisão de segurança antes da publicação.
+
+
+## Gestão operacional
+
+O fluxo de doação possui transições controladas. O registro inicial cria uma doação com status `registrada`, sem alterar o estoque. A confirmação de recebimento gera entradas; a confirmação de distribuição gera saídas. O saldo não pode ficar negativo.
+
+A atualização do status, do saldo, da movimentação e do registro de auditoria ocorre em uma única transação InnoDB. Em caso de falha, toda a operação é revertida.
+
+Os relatórios são consultas agregadas no backend. A exportação CSV neutraliza valores que poderiam ser interpretados como fórmulas por planilhas.
+
+## Limitações de segurança
+
+A trilha de auditoria identifica entidade, registro, ação e detalhes, mas ainda não registra operador autenticado. A aplicação permanece sem autenticação/autorização e não deve ser exposta publicamente até que esse controle seja implementado e testado.
