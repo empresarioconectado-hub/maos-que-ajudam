@@ -131,11 +131,11 @@ O modelo original do PIE II foi preservado. A gestão operacional foi acrescenta
 
 ### `estoque`
 
-Mantém o saldo atual por item. O saldo não é alterado no simples registro de uma doação; ele é atualizado somente quando o recebimento é confirmado ou a distribuição é concluída.
+Mantém o saldo atual e a quantidade mínima para alerta por item. O saldo não é alterado no simples registro de uma doação; ele é atualizado quando o recebimento é confirmado, a distribuição é concluída ou um administrador registra um ajuste manual.
 
 ### `movimentacao_estoque`
 
-Registra cada entrada ou saída, com item, quantidade, origem e referência à doação quando aplicável. As movimentações originadas por mudança de status são gravadas na mesma transação da atualização do saldo.
+Registra cada entrada ou saída, com item, quantidade, origem e referência à doação quando aplicável. As movimentações originadas por mudança de status ou ajuste manual são gravadas na mesma transação da atualização do saldo. Ajustes manuais são restritos ao perfil administrador.
 
 ### `auditoria`
 
@@ -148,8 +148,9 @@ Para uma base já criada com a versão anterior do schema, faça backup e execut
 ```bash
 mariadb -u root -p maos_que_ajudam < database/migrations/002_gestao_operacional.sql
 mariadb -u root -p maos_que_ajudam < database/migrations/003_autenticacao.sql
+mariadb -u root -p maos_que_ajudam < database/migrations/004_limite_minimo_estoque.sql
 ```
 
-A migração 002 adiciona o status padrão `registrada`, cria as tabelas complementares e inicializa saldo zero para os itens existentes. A migração 003 cria a tabela de usuários e associa os eventos de auditoria às contas. Ambas verificam estruturas existentes e podem ser reexecutadas.
+A migração 002 adiciona o status padrão `registrada`, cria as tabelas complementares e inicializa saldo zero para os itens existentes. A migração 003 cria a tabela de usuários e associa os eventos de auditoria às contas. A migração 004 adiciona a quantidade mínima e sua constraint. Todas verificam estruturas existentes e podem ser reexecutadas.
 
 Para bancos novos, utilize o `database/schema.sql` atualizado. As migrações 002 e 003 agora verificam a existência de estruturas antes de criá-las e podem ser reexecutadas; ainda assim, faça backup antes de qualquer alteração em dados persistentes.
