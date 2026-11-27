@@ -62,6 +62,17 @@ Projeto Integrador Extensionista II — API de apoio à ONG Mãos que Ajudam.
 
    Acesse http://localhost:5173. A API usa http://localhost:3000.
 
+## Interface web
+
+O frontend disponibiliza uma interface responsiva em `http://localhost:5173` com:
+- Cadastro, listagem, edição e exclusão de doadores;
+- Consulta do catálogo de itens;
+- Registro de doações com seleção de múltiplos itens e quantidades;
+- Histórico de doações com identificação do doador e itens registrados;
+- Indicadores de quantidade de doadores, itens e doações.
+
+A interface consome as rotas REST da API e apresenta mensagens para erros de validação e conflitos de integridade (por exemplo, tentativa de excluir doador com doação vinculada).
+
 ## Modelo relacional
 
 - **doador 1:N doacao**: um doador pode realizar várias doações.
