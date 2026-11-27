@@ -53,6 +53,8 @@ jobs:
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/004_limite_minimo_estoque.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/004_limite_minimo_estoque.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/005_sessoes_revogaveis.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/005_sessoes_revogaveis.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/seed.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
