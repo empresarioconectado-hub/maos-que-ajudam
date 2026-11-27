@@ -121,7 +121,7 @@ npm test
 npm run build
 ```
 
-Os testes cobrem validação de entrada, normalização, paginação e regras de transição de status. O workflow inicializa um MariaDB 10.11 descartável, executa testes de integração da API e do fluxo de estoque e gera o build do frontend. Ainda não há suíte E2E em navegador.
+Os testes cobrem hash de senhas, assinatura e expiração de tokens, validações, paginação, regras de transição, autenticação, autorização, rollback transacional, movimentações de estoque, auditoria e exportação CSV. O workflow inicializa MariaDB 10.11, executa o schema duas vezes, reaplica as migrações e roda os testes de integração antes do build. Ainda não há suíte E2E em navegador.
 
 ## Banco de dados
 
@@ -137,7 +137,7 @@ O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `
 
 ## Segurança e limitações
 
-A autenticação utiliza tokens Bearer assinados com `AUTH_SECRET`, senhas derivadas por scrypt e perfis de acesso. A trilha de auditoria registra criação e transições de status, mas ainda não armazena o identificador do operador responsável. As migrações são SQL versionadas e reexecutáveis, mas ainda não há um gerenciador automatizado de migrações. Os cabeçalhos HTTP e identificadores de requisição são medidas básicas, não uma certificação de segurança.
+A autenticação utiliza tokens Bearer assinados com `AUTH_SECRET`, senhas derivadas por scrypt e perfis de acesso. A trilha de auditoria registra criação e transições de status vinculadas à conta autenticada que executou a operação. As migrações são SQL versionadas e reexecutáveis, mas ainda não há um gerenciador automatizado de migrações. Os cabeçalhos HTTP e identificadores de requisição são medidas básicas, não uma certificação de segurança.
 
 A autenticação implementada é uma base para o projeto, não uma certificação de segurança. Antes de produção, configure HTTPS, CORS por allowlist, rate limiting distribuído, rotação de segredos, backups testados, monitoramento, política de sessão e revisão de privacidade/LGPD. O limitador de login atual é em memória e não substitui proteção distribuída. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
 
