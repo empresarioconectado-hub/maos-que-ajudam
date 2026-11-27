@@ -59,4 +59,4 @@ Os relatórios são consultas agregadas no backend. A exportação CSV neutraliz
 
 ## Limitações de segurança
 
-A trilha de auditoria identifica entidade, registro, ação e detalhes, mas ainda não registra operador autenticado. A aplicação permanece sem autenticação/autorização e não deve ser exposta publicamente até que esse controle seja implementado e testado.
+A trilha de auditoria identifica entidade, registro, ação, detalhes e conta autenticada responsável. Ainda não há MFA, recuperação de senha, revogação individual de tokens ou rate limiting distribuído. A aplicação não deve ser exposta publicamente antes de uma revisão operacional e de segurança.
