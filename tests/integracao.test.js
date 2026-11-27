@@ -176,7 +176,9 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   );
   assert.deepEqual(movimentacoes.map(m => [m.tipo, m.quantidade]), [["entrada", 2], ["saida", 2]]);
 
-  const exportacao = await fetch(base + "/api/relatorios/doacoes.csv");
+  const exportacao = await fetch(base + "/api/relatorios/doacoes.csv", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   assert.equal(exportacao.status, 200);
   assert.ok(exportacao.headers.get("content-type")?.includes("text/csv"));
   const csv = await exportacao.text();
