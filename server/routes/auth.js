@@ -14,6 +14,7 @@ function limitarTentativasLogin(req, res, next) {
   let registro = tentativasLogin.get(chave);
   if (!registro || agora >= registro.expiraEm) {
     registro = { quantidade: 0, expiraEm: agora + JANELA_LOGIN_MS };
+    tentativasLogin.set(chave, registro);
   }
   if (registro.quantidade >= MAX_TENTATIVAS_LOGIN) {
     res.set("Retry-After", String(Math.ceil((registro.expiraEm - agora) / 1000)));
@@ -22,14 +23,22 @@ function limitarTentativasLogin(req, res, next) {
       requestId: req.requestId,
     });
   }
-  registro.quantidade += 1;
-  tentativasLogin.set(chave, registro);
+  req.chaveLimiteLogin = chave;
   if (tentativasLogin.size > 10000) {
     for (const [ip, item] of tentativasLogin) {
       if (agora >= item.expiraEm) tentativasLogin.delete(ip);
     }
   }
   return next();
+}
+
+function registrarFalhaLogin(req) {
+  const agora = Date.now();
+  const registro = tentativasLogin.get(req.chaveLimiteLogin) || {
+    quantidade: 0, expiraEm: agora + JANELA_LOGIN_MS,
+  };
+  registro.quantidade += 1;
+  tentativasLogin.set(req.chaveLimiteLogin, registro);
 }
 
 router.post("/login", limitarTentativasLogin, async (req, res) => {
@@ -49,8 +58,10 @@ router.post("/login", limitarTentativasLogin, async (req, res) => {
     ? await verificarSenha(senha, usuario.senha_hash)
     : await verificarSenha(senha, "scrypt$00000000000000000000000000000000$" + "0".repeat(128));
   if (!usuario || !usuario.ativo || !senhaValida) {
+    registrarFalhaLogin(req);
     throw new HttpError(401, "E-mail ou senha incorretos");
   }
+  tentativasLogin.delete(req.chaveLimiteLogin);
 
   return res.json({
     token: emitirToken(usuario),
