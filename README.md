@@ -11,7 +11,7 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 - Registro de doações com data, observação e múltiplos itens.
 - Histórico de doações com ciclo de status (registrada, recebida, distribuída ou cancelada).
 - Controle de saldo por item, com movimentações de entrada e saída vinculadas às doações.
-- Trilha de auditoria para criação e alteração de status das doações.
+- Trilha de auditoria para doações, ajustes de estoque e configuração de limites, vinculada ao usuário autenticado.
 - Dashboard com indicadores operacionais.
 - Exportação do histórico em CSV.
 - Comprovante de doação pronto para impressão ou salvamento em PDF pelo navegador.
@@ -126,7 +126,7 @@ npm test
 npm run build
 ```
 
-Os testes cobrem hash de senhas, assinatura e expiração de tokens, validações, paginação, regras de transição, autenticação, autorização, rollback transacional, movimentações de estoque, auditoria e exportação CSV. O workflow inicializa MariaDB 10.11, executa o schema duas vezes, reaplica as migrações e roda os testes de integração antes do build. Ainda não há suíte E2E em navegador.
+Os testes cobrem hash de senhas, assinatura e expiração de tokens, validações, paginação, regras de transição, autenticação, autorização, rollback transacional, movimentações automáticas e manuais, alertas de estoque mínimo, auditoria e exportação CSV. O workflow inicializa MariaDB 10.11, executa o schema duas vezes, reaplica as migrações e roda os testes de integração antes do build. Ainda não há suíte E2E em navegador.
 
 ## Banco de dados
 
