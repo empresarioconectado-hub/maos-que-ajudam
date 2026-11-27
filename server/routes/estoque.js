@@ -18,7 +18,7 @@ router.get("/", async (_req, res) => {
 router.get("/movimentacoes", async (req, res) => {
   const limiteTexto = req.query.limit;
   const limite = limiteTexto === undefined ? 50 : Number(limiteTexto);
-  if ((limiteTexto !== undefined && (typeof limiteTexto !== "string" || !/^[1-9]\\d*$/.test(limiteTexto))) || !Number.isSafeInteger(limite) || limite < 1 || limite > 200) {
+  if ((limiteTexto !== undefined && (typeof limiteTexto !== "string" || !/^[1-9]\d*$/.test(limiteTexto))) || !Number.isSafeInteger(limite) || limite < 1 || limite > 200) {
     throw new HttpError(400, "O parâmetro limit deve ser um inteiro entre 1 e 200");
   }
   const [rows] = await pool.execute(
