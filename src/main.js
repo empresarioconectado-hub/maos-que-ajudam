@@ -52,7 +52,15 @@ async function carregar() {
 }
 function mudarAba(aba) {
   state.aba = aba;
-  render();
+  app.querySelectorAll("[data-aba]").forEach(botao => {
+    const ativo = botao.dataset.aba === aba;
+    botao.classList.toggle("ativa", ativo);
+    botao.setAttribute("aria-current", ativo ? "page" : "false");
+  });
+  ["inicio", "doadores", "doacoes", "estoque", "catalogo"].forEach(nome => {
+    const painel = document.querySelector("#painel-" + nome);
+    if (painel) painel.hidden = nome !== aba;
+  });
 }
 function render() {
   const resumo = state.resumo || { doadores: 0, itens_catalogo: 0, unidades_em_estoque: 0, doacoes: {} };
