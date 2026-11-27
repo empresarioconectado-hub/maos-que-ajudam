@@ -53,7 +53,7 @@ export function validarDoacao(dados = {}) {
 
   const { id_doador, data_doacao, observacao, itens } = dados;
 
-  if (!Number.isInteger(id_doador) || id_doador <= 0) {
+  if (!Number.isSafeInteger(id_doador) || id_doador <= 0 || id_doador > 2147483647) {
     return "ID do doador inválido";
   }
 
@@ -90,8 +90,8 @@ export function validarDoacao(dados = {}) {
     if (
       !item ||
       typeof item !== "object" ||
-      !Number.isInteger(item.id_item) ||
-      item.id_item <= 0
+      !Number.isSafeInteger(item.id_item) ||
+      item.id_item <= 0 || item.id_item > 2147483647
     ) {
       return "ID do item inválido";
     }
