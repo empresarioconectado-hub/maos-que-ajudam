@@ -31,3 +31,5 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .login-card input:focus{outline:3px solid #27956c25;border-color:#27956c}
 .login-card .botao{padding:13px}
 @media(max-width:720px){.acoes-conta{align-items:flex-end;flex-direction:column}.topo{align-items:center}.login-card{padding:24px}}
+
+.acoes-relatorio{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
