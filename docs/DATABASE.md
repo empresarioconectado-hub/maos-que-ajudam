@@ -62,6 +62,7 @@ A combinação de categoria e nome do item é única.
 | `id_doador` | INT | FK para `doador` |
 | `data_doacao` | DATE | Obrigatório |
 | `observacao` | VARCHAR(255) | Opcional |
+| `status` | VARCHAR(20) | `registrada`, `recebida`, `distribuida` ou `cancelada` |
 
 Há índice para a data e para a chave estrangeira do doador.
 
