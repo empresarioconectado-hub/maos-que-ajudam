@@ -41,7 +41,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mariadb-client
       - name: Instalar dependências
-        run: npm ci --ignore-scripts --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
       - name: Preparar banco de testes
         run: |
           mariadb -h 127.0.0.1 -uroot -proot < database/schema.sql
