@@ -1,0 +1,91 @@
+@baseUrl = http://localhost:3000
+
+### Saúde da API e conexão com o banco
+GET {{baseUrl}}/api/health
+
+### Listar doadores
+GET {{baseUrl}}/api/doadores
+
+### Cadastrar doador (use o ID retornado nos testes seguintes)
+POST {{baseUrl}}/api/doadores
+Content-Type: application/json
+
+{
+  "nome": "Ana Souza",
+  "email": "ana.souza@example.com",
+  "telefone": "11999999999"
+}
+
+### Consultar doador pelo ID
+GET {{baseUrl}}/api/doadores/1
+
+### Atualizar doador pelo ID
+PUT {{baseUrl}}/api/doadores/1
+Content-Type: application/json
+
+{
+  "nome": "Ana Souza Atualizada",
+  "email": "ana.atualizada@example.com",
+  "telefone": "11988888888"
+}
+
+### Excluir doador pelo ID (use somente doador sem doações)
+DELETE {{baseUrl}}/api/doadores/1
+
+### Listar catálogo de itens
+GET {{baseUrl}}/api/itens
+
+### Listar doações com doador e itens
+GET {{baseUrl}}/api/doacoes
+
+### Registrar doação (ajuste os IDs conforme as respostas da API)
+POST {{baseUrl}}/api/doacoes
+Content-Type: application/json
+
+{
+  "id_doador": 1,
+  "data_doacao": "2026-11-27",
+  "observacao": "Doação registrada pelo arquivo api.http",
+  "itens": [
+    { "id_item": 1, "quantidade": 4 },
+    { "id_item": 4, "quantidade": 2 }
+  ]
+}
+
+### Teste de validação: nome obrigatório (esperado 400)
+POST {{baseUrl}}/api/doadores
+Content-Type: application/json
+
+{
+  "nome": "",
+  "email": "invalido"
+}
+
+### Teste de validação: quantidade positiva (esperado 400)
+POST {{baseUrl}}/api/doacoes
+Content-Type: application/json
+
+{
+  "id_doador": 1,
+  "data_doacao": "2026-11-27",
+  "itens": [
+    { "id_item": 1, "quantidade": 0 }
+  ]
+}
+
+### Teste de integridade/rollback: item inexistente (esperado 400; nenhuma doação parcial)
+POST {{baseUrl}}/api/doacoes
+Content-Type: application/json
+
+{
+  "id_doador": 1,
+  "data_doacao": "2026-11-27",
+  "observacao": "Teste de rollback",
+  "itens": [
+    { "id_item": 1, "quantidade": 1 },
+    { "id_item": 99999, "quantidade": 1 }
+  ]
+}
+
+### Teste de rota inexistente (esperado 404 em JSON)
+GET {{baseUrl}}/api/rota-inexistente

@@ -1,47 +1,117 @@
 # Mãos que Ajudam
 
-Projeto desenvolvido como parte da atividade Projeto Integrador Extensionista II.
+Projeto Integrador Extensionista II — API de apoio à ONG Mãos que Ajudam.
 
-## Tecnologias utilizadas
+## Tecnologias
 
-- JavaScript
-- Vite+
-- Node.js
-- Express
+- Node.js e Express 5
+- MySQL/MariaDB
+- mysql2 com consultas parametrizadas
+- Vite+ no frontend
 
 ## Requisitos
 
-- Node.js
+- Node.js 22 ou compatível com as dependências do projeto
 - npm
+- MySQL 8+ ou MariaDB 10.11+
+- Extensão REST Client no VS Code (opcional, para executar \`api.http\`)
 
-## Como executar
+## Configuração
 
-### 1. Instalar as dependências
+1. Instale as dependências:
 
-npm install
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-### 2. Iniciar a API
+   O comando instala \`dotenv\` e \`mysql2\` e atualiza o \`package-lock.json\` conforme o \`package.json\`.
 
-Em um terminal, execute:
+2. Crie o banco e as tabelas em um banco novo:
 
-npm run api
+   \`\`\`bash
+   mariadb -u root -p < database/schema.sql
+   \`\`\`
 
-A API será iniciada em http://localhost:3000
+   O script usa \`CREATE DATABASE IF NOT EXISTS\` e \`CREATE TABLE IF NOT EXISTS\`; não contém DROP e não apaga registros. Ele é destinado à criação inicial, não substitui migrações para tabelas já existentes.
 
-### 3. Iniciar o frontend
+3. (Opcional) Insira categorias e itens de demonstração:
 
-Em outro terminal, execute:
+   \`\`\`bash
+   mariadb -u root -p < database/seed.sql
+   \`\`\`
 
-npm run dev
+4. Copie \`.env.example\` para \`.env\` e preencha as credenciais locais do MariaDB:
 
-Acesse no navegador:
+   \`\`\`bash
+   cp .env.example .env
+   \`\`\`
 
-http://localhost:5173
+   Nunca envie o arquivo \`.env\` ao GitHub.
 
-## Verificação da API
+5. Inicie a API:
 
-A rota de verificação é:
+   \`\`\`bash
+   npm run api
+   \`\`\`
 
-http://localhost:3000/api/health
+6. Em outro terminal, inicie o frontend:
 
-Ela retorna o status da API e a data e hora da consulta.
+   \`\`\`bash
+   npm run dev
+   \`\`\`
+
+   Acesse http://localhost:5173. A API usa http://localhost:3000.
+
+## Modelo relacional
+
+- **doador 1:N doacao**: um doador pode realizar várias doações.
+- **categoria 1:N item**: cada item pertence a uma categoria.
+- **doacao N:N item**: relacionamento resolvido por \`doacao_item\`, que armazena a quantidade.
+
+As chaves estrangeiras protegem a integridade referencial. O histórico impede excluir doadores vinculados a doações e itens vinculados a registros.
+
+## Endpoints
+
+| Método | Rota | Finalidade |
+|---|---|---|
+| GET | \`/api/health\` | Verificar API e banco |
+| GET | \`/api/doadores\` | Listar doadores |
+| GET | \`/api/doadores/:id\` | Consultar doador |
+| POST | \`/api/doadores\` | Cadastrar doador |
+| PUT | \`/api/doadores/:id\` | Atualizar doador |
+| DELETE | \`/api/doadores/:id\` | Excluir doador sem vínculos |
+| GET | \`/api/itens\` | Listar catálogo de itens |
+| GET | \`/api/doacoes\` | Listar doações com doador e itens |
+| POST | \`/api/doacoes\` | Registrar doação e seus itens |
+
+### Exemplo de cadastro de doação
+
+\`\`\`json
+{
+  "id_doador": 1,
+  "data_doacao": "2026-11-27",
+  "observacao": "Arrecadação da escola",
+  "itens": [
+    { "id_item": 1, "quantidade": 4 },
+    { "id_item": 4, "quantidade": 6 }
+  ]
+}
+\`\`\`
+
+A rota de doações valida todos os dados e grava a doação e seus itens em uma única transação. Em caso de falha, executa ROLLBACK; em caso de sucesso, COMMIT.
+
+## Validações e segurança
+
+- Consultas SQL usam parâmetros \`?\`; valores recebidos nunca são concatenados ao SQL.
+- As consultas selecionam somente os campos necessários, sem \`SELECT *\`.
+- Validação no servidor para nome, e-mail, telefone, data, IDs, itens e quantidades.
+- E-mail duplicado retorna HTTP 409.
+- IDs e dados inválidos retornam HTTP 400.
+- Recursos inexistentes retornam HTTP 404.
+- Exclusões bloqueadas por chave estrangeira retornam HTTP 409.
+- Erros internos retornam mensagem genérica; detalhes técnicos ficam apenas no log do servidor.
+- O middleware centralizado trata JSON malformado, payload excessivo, erros de banco e rotas inexistentes.
+
+## Testes manuais
+
+Com a API em execução, abra \`api.http\` no VS Code com a extensão REST Client. Execute as requisições em sequência e ajuste os IDs conforme as respostas do banco. O arquivo inclui testes de CRUD, validação, integridade referencial e rollback.
