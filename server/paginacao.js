@@ -33,7 +33,7 @@ export function montarMetadadosPaginacao(page, limit, total) {
   return {
     page,
     limit,
-    total,
+    total: Number(total),
     totalPages: Math.ceil(total / limit),
   };
 }
