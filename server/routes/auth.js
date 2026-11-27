@@ -4,8 +4,35 @@ import { HttpError } from "../erros.js";
 import { autenticar, emitirToken, verificarSenha } from "../auth.js";
 
 const router = Router();
+const tentativasLogin = new Map();
+const JANELA_LOGIN_MS = 15 * 60 * 1000;
+const MAX_TENTATIVAS_LOGIN = 10;
 
-router.post("/login", async (req, res) => {
+function limitarTentativasLogin(req, res, next) {
+  const agora = Date.now();
+  const chave = req.ip || req.socket.remoteAddress || "desconhecido";
+  let registro = tentativasLogin.get(chave);
+  if (!registro || agora >= registro.expiraEm) {
+    registro = { quantidade: 0, expiraEm: agora + JANELA_LOGIN_MS };
+  }
+  if (registro.quantidade >= MAX_TENTATIVAS_LOGIN) {
+    res.set("Retry-After", String(Math.ceil((registro.expiraEm - agora) / 1000)));
+    return res.status(429).json({
+      erro: "Muitas tentativas de acesso. Aguarde antes de tentar novamente.",
+      requestId: req.requestId,
+    });
+  }
+  registro.quantidade += 1;
+  tentativasLogin.set(chave, registro);
+  if (tentativasLogin.size > 10000) {
+    for (const [ip, item] of tentativasLogin) {
+      if (agora >= item.expiraEm) tentativasLogin.delete(ip);
+    }
+  }
+  return next();
+}
+
+router.post("/login", limitarTentativasLogin, async (req, res) => {
   const { email, senha } = req.body ?? {};
   if (typeof email !== "string" || email.trim().length > 100 ||
       typeof senha !== "string" || senha.length > 128) {
