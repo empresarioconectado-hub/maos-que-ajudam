@@ -2,6 +2,7 @@ import { Router } from "express";
 import pool from "../db.js";
 import { HttpError } from "../erros.js";
 import { validarDoacao } from "../validacao.js";
+import { validarTransicaoStatus } from "../regras-doacao.js";
 
 const router = Router();
 const STATUS_VALIDOS = new Set(["recebida", "distribuida", "cancelada"]);
@@ -111,12 +112,7 @@ router.patch("/:id/status", async (req, res) => {
     );
     if (!doacoes.length) throw new HttpError(404, "Doação não encontrada");
     const atual = doacoes[0].status;
-    const transicaoValida =
-      (atual === "registrada" && ["recebida", "cancelada"].includes(status)) ||
-      (atual === "recebida" && status === "distribuida");
-    if (!transicaoValida) {
-      throw new HttpError(409, `Transição de status não permitida: ${atual} → ${status}`);
-    }
+    validarTransicaoStatus(atual, status);
 
     const [itens] = await conexao.execute(
       "SELECT id_item, quantidade FROM doacao_item WHERE id_doacao = ? ORDER BY id_item FOR UPDATE", [id]
