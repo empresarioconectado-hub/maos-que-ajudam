@@ -2,12 +2,22 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import app from "../server/app.js";
 import pool from "../server/db.js";
+import { gerarHashSenha } from "../server/auth.js";
+
+process.env.AUTH_SECRET ||= "segredo-exclusivo-para-testes-com-mais-de-32-bytes";
 
 test("API integra cadastro, recebimento, estoque, distribuição e auditoria", async t => {
   if (process.env.TEST_DATABASE !== "1") {
     t.skip("Defina TEST_DATABASE=1 e configure um banco descartável para executar a integração");
     return;
   }
+
+  const emailOperador = `operador-${Date.now()}@exemplo.test`;
+  const hashSenha = await gerarHashSenha("Senha-forte-para-teste-2026!");
+  await pool.execute(
+    "INSERT INTO usuario (nome, email, senha_hash, perfil) VALUES (?, ?, ?, 'operador')",
+    ["Operador de teste", emailOperador, hashSenha],
+  );
 
   const servidor = app.listen(0);
   await new Promise(resolve => servidor.once("listening", resolve));
@@ -17,13 +27,40 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   });
 
   const base = `http://127.0.0.1:${servidor.address().port}`;
+  let token = null;
   const request = async (path, options = {}) => {
     const response = await fetch(base + path, {
       ...options,
-      headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(options.headers || {}) },
+      headers: {
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
     });
     return { status: response.status, body: response.status === 204 ? null : await response.json() };
   };
+
+  const semAutenticacao = await request("/api/doadores");
+  assert.equal(semAutenticacao.status, 401);
+
+  const loginInvalido = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: emailOperador, senha: "senha-incorreta" }),
+  });
+  assert.equal(loginInvalido.status, 401);
+
+  const login = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: emailOperador, senha: "Senha-forte-para-teste-2026!" }),
+  });
+  assert.equal(login.status, 200);
+  assert.equal(login.body.usuario.perfil, "operador");
+  token = login.body.token;
+  assert.ok(token);
+
+  const perfil = await request("/api/auth/me");
+  assert.equal(perfil.status, 200);
+  assert.equal(perfil.body.email, emailOperador);
 
   const live = await request("/api/health/live");
   assert.equal(live.status, 200);
@@ -42,6 +79,9 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   });
   assert.equal(cadastro.status, 201);
   const idDoador = cadastro.body.id_doador;
+  const excluirComoOperador = await request(`/api/doadores/${idDoador}`, { method: "DELETE" });
+  assert.equal(excluirComoOperador.status, 403);
+
   const duplicado = await request("/api/doadores", {
     method: "POST",
     body: JSON.stringify({ nome: "Duplicado", email }),
