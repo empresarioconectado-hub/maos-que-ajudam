@@ -41,9 +41,6 @@ Content-Type: application/json
   "telefone": "11988888888"
 }
 
-### Excluir doador pelo ID (use somente doador sem doações)
-DELETE {{baseUrl}}/api/doadores/1
-
 ### Listar catálogo de itens
 GET {{baseUrl}}/api/itens
 
@@ -65,7 +62,7 @@ Content-Type: application/json
 }
 
 ### Teste HTTP 409: excluir doador com doação vinculada (esperado 409)
-# Ajuste o ID para um doador que possua ao menos uma doação registrada.
+# Ajuste o ID para o mesmo doador usado no POST /api/doacoes acima.
 DELETE {{baseUrl}}/api/doadores/1
 
 ### Teste de validação: nome obrigatório (esperado 400)
