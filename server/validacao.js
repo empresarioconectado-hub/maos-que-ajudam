@@ -80,8 +80,8 @@ export function validarDoacao(dados = {}) {
     return "Observação deve ter no máximo 255 caracteres";
   }
 
-  if (!Array.isArray(itens) || itens.length === 0) {
-    return "A doação deve possuir pelo menos um item";
+  if (!Array.isArray(itens) || itens.length === 0 || itens.length > 100) {
+    return "A doação deve possuir entre 1 e 100 itens";
   }
 
   const idsItens = new Set();
@@ -96,7 +96,7 @@ export function validarDoacao(dados = {}) {
       return "ID do item inválido";
     }
 
-    if (!Number.isInteger(item.quantidade) || item.quantidade <= 0) {
+    if (!Number.isSafeInteger(item.quantidade) || item.quantidade <= 0 || item.quantidade > 2147483647) {
       return "A quantidade de cada item deve ser um número inteiro positivo";
     }
 
