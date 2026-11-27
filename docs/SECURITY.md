@@ -25,7 +25,8 @@ O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente
 - Não há recuperação de senha, MFA ou revogação individual imediata de tokens já emitidos.
 - A auditoria registra a conta que executou a operação, mas não registra endereço IP nem agente do usuário.
 - Tokens são validados contra o estado atual da conta em cada requisição; não há logout/revogação individual por token.
-- O limitador de login é local ao processo e não compartilha estado entre instâncias.\n- O token do navegador fica em `sessionStorage`; um XSS bem-sucedido pode acessá-lo, portanto CSP e revisão da interface são necessárias.
+- O limitador de login é local ao processo e não compartilha estado entre instâncias.
+- O token do navegador fica em `sessionStorage`; um XSS bem-sucedido pode acessá-lo, portanto CSP e revisão da interface são necessárias.
 - Não há política CORS explícita por allowlist nem proteção distribuída contra abuso.
 - Não há implantação HTTPS, gestão de segredos em ambiente de produção ou monitoramento externo.
 - A adequação à LGPD depende de definição institucional de finalidade, base legal, retenção, transparência e atendimento aos titulares.
