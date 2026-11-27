@@ -89,8 +89,10 @@ CREATE TABLE IF NOT EXISTS doacao_item (
 CREATE TABLE IF NOT EXISTS estoque (
   id_item INT PRIMARY KEY,
   quantidade_atual INT NOT NULL DEFAULT 0,
+  quantidade_minima INT NOT NULL DEFAULT 0,
   atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT chk_estoque_quantidade CHECK (quantidade_atual >= 0),
+  CONSTRAINT chk_estoque_quantidade_minima CHECK (quantidade_minima >= 0),
   CONSTRAINT fk_estoque_item FOREIGN KEY (id_item) REFERENCES item (id_item) ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
