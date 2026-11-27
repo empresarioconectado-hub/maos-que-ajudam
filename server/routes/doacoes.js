@@ -118,6 +118,9 @@ router.patch("/:id/status", async (req, res) => {
     const [itens] = await conexao.execute(
       "SELECT id_item, quantidade FROM doacao_item WHERE id_doacao = ? ORDER BY id_item FOR UPDATE", [id]
     );
+    if (status !== "cancelada" && itens.length === 0) {
+      throw new HttpError(409, "Não é possível avançar uma doação sem itens registrados");
+    }
     if (status === "recebida" || status === "distribuida") {
       for (const item of itens) {
         await conexao.execute(
