@@ -125,4 +125,4 @@ Transições fora dessas regras retornam HTTP 409. A distribuição também reto
 - `GET /api/relatorios/resumo`: indicadores gerais e quantidades por status.
 - `GET /api/relatorios/doacoes.csv`: exportação CSV do histórico de doações e itens.
 
-A exportação neutraliza prefixos de fórmulas em campos textuais para reduzir o risco de CSV Injection em planilhas.
+A exportação neutraliza prefixos de fórmulas em campos textuais para reduzir o risco de CSV Injection em planilhas. O histórico de doações também oferece comprovante para impressão pelo navegador, com opção de salvar como PDF no diálogo de impressão. Esse recurso não gera um arquivo PDF no servidor.
