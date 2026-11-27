@@ -131,7 +131,7 @@ O modelo original do PIE II foi preservado. A gestão operacional foi acrescenta
 
 ### `estoque`
 
-Mantém o saldo atual e a quantidade mínima para alerta por item. O saldo não é alterado no simples registro de uma doação; ele é atualizado quando o recebimento é confirmado, a distribuição é concluída ou um administrador registra um ajuste manual.
+Mantém o saldo atual e a quantidade mínima para alerta por item. A constraint impede saldos ou limites negativos. O saldo não é alterado no simples registro de uma doação; ele é atualizado quando o recebimento é confirmado, a distribuição é concluída ou um administrador registra um ajuste manual.
 
 ### `movimentacao_estoque`
 
