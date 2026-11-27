@@ -77,7 +77,14 @@ Retorna doações com os dados resumidos do doador e seus itens. Sem parâmetros
 
 Registra uma doação e os respectivos itens em uma transação. O banco confirma toda a operação ou reverte as alterações em caso de falha.
 
-## Relatórios\n\n- `GET /api/relatorios/resumo`: indicadores agregados para o painel.\n- `GET /api/relatorios/doacoes.csv`: exportação CSV com neutralização de conteúdo que poderia ser interpretado como fórmula em planilhas.\n\nO relatório em PDF é gerado pela interface por meio da impressão do navegador; na janela de impressão, selecione “Salvar como PDF”.\n\n## Erros e rastreabilidade
+## Relatórios
+
+- `GET /api/relatorios/resumo`: indicadores agregados para o painel.
+- `GET /api/relatorios/doacoes.csv`: exportação CSV com neutralização de conteúdo que poderia ser interpretado como fórmula em planilhas.
+
+O relatório em PDF é gerado pela interface por meio da impressão do navegador; na janela de impressão, selecione “Salvar como PDF”.
+
+## Erros e rastreabilidade
 
 As respostas de erro seguem o formato:
 
