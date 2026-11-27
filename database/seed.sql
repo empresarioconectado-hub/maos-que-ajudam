@@ -5,6 +5,10 @@ USE maos_que_ajudam;
 INSERT IGNORE INTO categoria (nome)
 VALUES ('Alimento'), ('Higiene'), ('Vestuário');
 
+-- Doador fictício para testes locais; INSERT IGNORE evita duplicação por e-mail.
+INSERT IGNORE INTO doador (nome, email, telefone)
+VALUES ('Ana Souza', 'ana.souza@exemplo.com', NULL);
+
 INSERT INTO item (id_categoria, nome, unidade)
 SELECT c.id_categoria, dados.nome, dados.unidade
 FROM (
