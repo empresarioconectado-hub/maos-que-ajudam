@@ -40,7 +40,7 @@ O Mãos que Ajudam é um projeto acadêmico e não deve ser exposto publicamente
 ## Requisitos antes de produção
 
 1. Adicionar MFA e política de revogação de tokens/sessões.
-2. Vincular os eventos de auditoria ao usuário autenticado.
+2. Avaliar o registro de endereço IP e agente do usuário na auditoria, com minimização e retenção compatíveis com a LGPD.
 3. Configurar HTTPS, CORS por allowlist e rate limiting distribuído.
 4. Utilizar gestão segura e rotação de segredos.
 5. Implementar backup automatizado e testar restauração.
