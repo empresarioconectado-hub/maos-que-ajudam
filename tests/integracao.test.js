@@ -203,6 +203,17 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   });
   assert.equal(loginAdmin.status, 200);
   token = loginAdmin.body.token;
+  const ajusteInvalido = await request("/api/estoque/movimentacoes", {
+    method: "POST",
+    body: JSON.stringify({ id_item: 1, tipo: "entrada", quantidade: 0 }),
+  });
+  assert.equal(ajusteInvalido.status, 400);
+  const limiteInvalido = await request("/api/estoque/1/limite-minimo", {
+    method: "PATCH",
+    body: JSON.stringify({ quantidade_minima: -1 }),
+  });
+  assert.equal(limiteInvalido.status, 400);
+
   const saldoAntesAjuste = (await request("/api/estoque")).body.find(item => item.id_item === 1).quantidade_atual;
   const entradaManual = await request("/api/estoque/movimentacoes", {
     method: "POST",
@@ -238,6 +249,8 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     body: JSON.stringify({ quantidade_minima: 0 }),
   });
   assert.equal(limiteDesativado.status, 200);
+  const estoqueSemAlerta = (await request("/api/estoque")).body.find(item => item.id_item === 1);
+  assert.equal(estoqueSemAlerta.estoque_baixo, 0);
 
   const [auditoriaEstoque] = await pool.execute(
     "SELECT COUNT(*) AS total FROM auditoria WHERE entidade = 'estoque' AND id_entidade = ? AND id_usuario = ?",
