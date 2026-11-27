@@ -34,7 +34,7 @@ test("aceita doação com data válida e itens distintos", () => {
 test("rejeita doação sem itens, com data impossível ou identificador inválido", () => {
   assert.match(validarDoacao({ id_doador: 1, data_doacao: "2026-02-30", itens: [{ id_item: 1, quantidade: 1 }] }), /Data da doação inválida/);
   assert.match(validarDoacao({ id_doador: 0, data_doacao: "2026-11-27", itens: [{ id_item: 1, quantidade: 1 }] }), /ID do doador inválido/);
-  assert.match(validarDoacao({ id_doador: 1, data_doacao: "2026-11-27", itens: [] }), /pelo menos um item/);
+  assert.match(validarDoacao({ id_doador: 1, data_doacao: "2026-11-27", itens: [] }), /entre 1 e 100/);
 });
 
 test("rejeita quantidade não positiva, item inválido ou item repetido", () => {
