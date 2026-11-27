@@ -76,16 +76,6 @@ router.post("/login", limitarTentativasLogin, async (req, res) => {
   });
 });
 
-router.get("/me", autenticar, async (req, res) => {
-  const [usuarios] = await pool.execute(
-    "SELECT id_usuario, nome, email, perfil, ativo FROM usuario WHERE id_usuario = ?",
-    [req.usuario.id_usuario]
-  );
-  if (!usuarios.length || !usuarios[0].ativo) {
-    throw new HttpError(401, "Conta inativa ou não encontrada");
-  }
-  const { ativo, ...usuario } = usuarios[0];
-  return res.json(usuario);
-});
+router.get("/me", autenticar, (req, res) => res.json(req.usuario));
 
 export default router;
