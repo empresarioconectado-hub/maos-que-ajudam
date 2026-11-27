@@ -5,6 +5,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { promisify } from "node:util";
+import pool from "./db.js";
 import { HttpError } from "./erros.js";
 
 const scrypt = promisify(scryptCallback);
@@ -43,8 +44,6 @@ function obterSegredo() {
 export function emitirToken(usuario, agora = Math.floor(Date.now() / 1000)) {
   const payload = Buffer.from(JSON.stringify({
     sub: usuario.id_usuario,
-    email: usuario.email,
-    perfil: usuario.perfil,
     iat: agora,
     exp: agora + DURACAO_TOKEN_SEGUNDOS,
   })).toString("base64url");
@@ -52,40 +51,73 @@ export function emitirToken(usuario, agora = Math.floor(Date.now() / 1000)) {
   return `${payload}.${assinatura}`;
 }
 
-export function autenticar(req, res, next) {
+export function validarToken(token, agora = Math.floor(Date.now() / 1000)) {
+  if (typeof token !== "string") throw new HttpError(401, "Token inválido");
+  const partes = token.split(".");
+  if (partes.length !== 2 || !partes.every(parte => /^[A-Za-z0-9_-]+$/.test(parte))) {
+    throw new HttpError(401, "Token inválido");
+  }
+  const [payloadCodificado, assinaturaRecebida] = partes;
+  const assinaturaEsperada = createHmac("sha256", obterSegredo())
+    .update(payloadCodificado).digest("base64url");
+  const recebida = Buffer.from(assinaturaRecebida);
+  const esperada = Buffer.from(assinaturaEsperada);
+  if (recebida.length !== esperada.length || !timingSafeEqual(recebida, esperada)) {
+    throw new HttpError(401, "Token inválido");
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(payloadCodificado, "base64url").toString("utf8"));
+  } catch {
+    throw new HttpError(401, "Token inválido");
+  }
+  if (!Number.isSafeInteger(payload.sub) || payload.sub <= 0 ||
+      !Number.isInteger(payload.exp) || payload.exp <= agora ||
+      !Number.isInteger(payload.iat) || payload.iat > agora + 60 ||
+      payload.exp - payload.iat > DURACAO_TOKEN_SEGUNDOS) {
+    throw new HttpError(401, "Token expirado ou inválido");
+  }
+  return { id_usuario: payload.sub };
+}
+
+export async function autenticar(req, res, next) {
+  let identidade;
   try {
     const cabecalho = req.get("authorization") || "";
-    const correspondencia = /^Bearer ([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(cabecalho);
+    const correspondencia = /^Bearer (.+)$/.exec(cabecalho);
     if (!correspondencia) throw new HttpError(401, "Autenticação necessária");
-    const [payloadCodificado, assinaturaRecebida] = correspondencia[1].split(".");
-    const assinaturaEsperada = createHmac("sha256", obterSegredo())
-      .update(payloadCodificado).digest("base64url");
-    const recebida = Buffer.from(assinaturaRecebida);
-    const esperada = Buffer.from(assinaturaEsperada);
-    if (recebida.length !== esperada.length || !timingSafeEqual(recebida, esperada)) {
-      throw new HttpError(401, "Token inválido");
-    }
-    const payload = JSON.parse(Buffer.from(payloadCodificado, "base64url").toString("utf8"));
-    const agora = Math.floor(Date.now() / 1000);
-    if (!Number.isSafeInteger(payload.sub) || payload.sub <= 0 ||
-        !["administrador", "operador"].includes(payload.perfil) ||
-        !Number.isInteger(payload.exp) || payload.exp <= agora ||
-        !Number.isInteger(payload.iat) || payload.iat > agora + 60) {
-      throw new HttpError(401, "Token expirado ou inválido");
-    }
-    req.usuario = { id_usuario: payload.sub, email: payload.email, perfil: payload.perfil };
-    return next();
+    identidade = validarToken(correspondencia[1]);
   } catch (erro) {
-    if (erro instanceof HttpError) return res.status(erro.status).json({
-      erro: erro.message, requestId: req.requestId,
-    });
+    if (erro instanceof HttpError) {
+      return res.status(erro.status).json({ erro: erro.message, requestId: req.requestId });
+    }
     console.error(JSON.stringify({
-      level: "error", message: "Falha ao validar autenticação",
+      level: "error", message: "Falha ao validar assinatura de autenticação",
       requestId: req.requestId, error: erro.message,
     }));
-    return res.status(503).json({
-      erro: "Serviço de autenticação indisponível", requestId: req.requestId,
-    });
+    return res.status(503).json({ erro: "Serviço de autenticação indisponível", requestId: req.requestId });
+  }
+
+  try {
+    // Consulta o estado atual da conta em cada requisição: desativação e mudança
+    // de perfil passam a valer imediatamente, sem aguardar a expiração do token.
+    const [usuarios] = await pool.execute(
+      "SELECT id_usuario, nome, email, perfil, ativo FROM usuario WHERE id_usuario = ?",
+      [identidade.id_usuario]
+    );
+    if (!usuarios.length || !usuarios[0].ativo) {
+      return res.status(401).json({ erro: "Conta inativa ou não encontrada", requestId: req.requestId });
+    }
+    const { ativo, ...usuario } = usuarios[0];
+    req.usuario = usuario;
+    return next();
+  } catch (erro) {
+    console.error(JSON.stringify({
+      level: "error", message: "Falha ao consultar conta autenticada",
+      requestId: req.requestId, error: erro.message,
+    }));
+    return res.status(503).json({ erro: "Não foi possível validar a conta neste momento", requestId: req.requestId });
   }
 }
 
