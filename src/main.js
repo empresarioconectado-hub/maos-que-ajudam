@@ -104,7 +104,7 @@ function render() {
           <article><span>Distribuídas</span><strong>${resumo.doacoes.distribuidas || 0}</strong></article>
           <article><span>Canceladas</span><strong>${resumo.doacoes.canceladas || 0}</strong></article>
         </div>
-        <div class="cabecalho-secao historico-titulo"><div><h2>Últimas doações</h2><p>Registros mais recentes.</p></div><button class="botao secundario" type="button" data-exportar-csv>Exportar CSV</button></div>
+        <div class="cabecalho-secao historico-titulo"><div><h2>Últimas doações</h2><p>Registros mais recentes.</p></div><div class="acoes-relatorio"><button class="botao secundario" type="button" data-exportar-csv>Exportar CSV</button><button class="botao secundario" type="button" data-imprimir-relatorio>Salvar relatório em PDF</button></div></div>
         ${renderHistorico(state.doacoes.slice(0, 5))}
       </section>
       <section class="painel" id="painel-doadores" ${state.aba !== "doadores" ? "hidden" : ""}>
@@ -157,6 +157,10 @@ function render() {
   });
   app.querySelectorAll("[data-exportar-csv]").forEach(b => b.addEventListener("click", async () => {
     try { await exportarCSV(); }
+    catch (erro) { aviso(erro.message, "erro"); }
+  }));
+  app.querySelectorAll("[data-imprimir-relatorio]").forEach(b => b.addEventListener("click", () => {
+    try { imprimirRelatorio(); }
     catch (erro) { aviso(erro.message, "erro"); }
   }));
   app.querySelectorAll("[data-aba]").forEach(b => b.addEventListener("click", () => mudarAba(b.dataset.aba)));
@@ -277,6 +281,50 @@ async function alterarStatus(id, status) {
     await carregar();
     aviso("Status atualizado e estoque sincronizado.");
   } catch (e) { aviso(e.message, "erro"); }
+}
+function imprimirRelatorio() {
+  const janela = window.open("", "_blank", "noopener,noreferrer");
+  if (!janela) throw new Error("Permita a abertura de janelas para gerar o relatório.");
+  const linhas = state.doacoes.flatMap(doacao => {
+    const itens = doacao.itens?.length ? doacao.itens : [null];
+    return itens.map(item => `<tr>
+      <td>${doacao.id_doacao}</td>
+      <td>${esc(doacao.data_doacao)}</td>
+      <td>${esc(doacao.doador?.nome || "—")}</td>
+      <td>${esc(item?.nome || "—")}</td>
+      <td>${item ? `${item.quantidade} ${esc(item.unidade || "")}` : "—"}</td>
+      <td>${esc(doacao.status)}</td>
+    </tr>`).join("");
+  }).join("");
+  const geradoEm = new Date().toLocaleString("pt-BR");
+  janela.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Relatório de doações — Mãos que Ajudam</title>
+    <style>
+      body{font:14px Arial,sans-serif;color:#24352b;margin:28px}
+      h1{font-size:22px;margin:0 0 6px;color:#155b45}
+      p{color:#617168;margin:4px 0 18px}
+      .indicadores{display:flex;gap:24px;margin:18px 0}
+      .indicadores strong{display:block;font-size:20px}
+      table{width:100%;border-collapse:collapse;margin-top:16px}
+      th,td{border:1px solid #dce5df;padding:8px;text-align:left}
+      th{background:#edf4ef}
+      @media print{body{margin:12mm}.nao-imprimir{display:none}}
+    </style></head><body>
+    <h1>Mãos que Ajudam — Relatório de doações</h1>
+    <p>Gerado em ${esc(geradoEm)}</p>
+    <div class="indicadores">
+      <div><strong>${state.doacoes.length}</strong>Doações registradas</div>
+      <div><strong>${state.doacoes.filter(d => d.status === "recebida").length}</strong>Recebidas</div>
+      <div><strong>${state.doacoes.filter(d => d.status === "distribuida").length}</strong>Distribuídas</div>
+      <div><strong>${state.doacoes.filter(d => d.status === "cancelada").length}</strong>Canceladas</div>
+    </div>
+    <table><thead><tr><th>ID</th><th>Data</th><th>Doador</th><th>Item</th><th>Quantidade</th><th>Status</th></tr></thead>
+    <tbody>${linhas || '<tr><td colspan="6">Nenhuma doação registrada.</td></tr>'}</tbody></table>
+    <p class="nao-imprimir">Use a opção “Salvar como PDF” na janela de impressão.</p>
+    <script>window.addEventListener("load",()=>window.print());</script>
+    </body></html>`);
+  janela.document.close();
 }
 async function exportarCSV() {
   const resposta = await fetch("/api/relatorios/doacoes.csv", {
