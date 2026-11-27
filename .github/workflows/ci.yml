@@ -28,6 +28,7 @@ jobs:
       DB_PASSWORD: root
       DB_NAME: maos_que_ajudam
       TEST_DATABASE: "1"
+      AUTH_SECRET: "segredo-exclusivo-para-testes-com-mais-de-32-bytes"
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
@@ -50,6 +51,8 @@ jobs:
           # A migração deve funcionar tanto em bases antigas quanto no schema atual.
           mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
           mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/002_gestao_operacional.sql
+          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
+          mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
           mariadb --skip-ssl -h 127.0.0.1 -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
         run: npm run prepare
