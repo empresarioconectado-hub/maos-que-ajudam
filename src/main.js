@@ -4,6 +4,7 @@ const app = document.querySelector("#app");
 const state = {
   doadores: [], itens: [], doacoes: [], estoque: [], movimentacoes: [], resumo: null,
   editando: null, itemSelecionado: [], aba: "inicio",
+  token: sessionStorage.getItem("maos_token"), usuario: null,
 };
 
 const hoje = () => {
@@ -16,7 +17,11 @@ const esc = (v = "") => String(v).replace(/[&<>"']/g, c => ({
 const api = async (rota, opcoes = {}) => {
   const resposta = await fetch(rota, {
     ...opcoes,
-    headers: { ...(opcoes.body ? { "Content-Type": "application/json" } : {}), ...(opcoes.headers || {}) },
+    headers: {
+      ...(opcoes.body ? { "Content-Type": "application/json" } : {}),
+      ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+      ...(opcoes.headers || {}),
+    },
   });
   const texto = await resposta.text();
   let dados = null;
@@ -25,6 +30,12 @@ const api = async (rota, opcoes = {}) => {
     const erro = new Error(dados?.erro || dados?.message || `Erro HTTP ${resposta.status}`);
     erro.status = resposta.status;
     erro.requestId = resposta.headers.get("X-Request-Id") || dados?.requestId;
+    if (resposta.status === 401 && state.token) {
+      state.token = null;
+      state.usuario = null;
+      sessionStorage.removeItem("maos_token");
+      renderLogin();
+    }
     throw erro;
   }
   return dados;
@@ -72,7 +83,7 @@ function render() {
   app.innerHTML = `
     <header class="topo">
       <div class="marca"><span class="simbolo" aria-hidden="true">♡</span><div><h1>Mãos que Ajudam</h1><p>Gestão de doações e solidariedade</p></div></div>
-      <div class="status"><span class="ponto"></span> API conectada</div>
+      <div class="acoes-conta"><span class="status"><span class="ponto"></span> API conectada · ${esc(state.usuario?.nome || "")}</span><button class="botao sair" id="sair" type="button">Sair</button></div>
     </header>
     <main>
       <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
@@ -105,7 +116,7 @@ function render() {
           <div class="acoes"><button class="botao primario" id="salvar-doador" type="submit">Cadastrar doador</button><button class="botao secundario" id="cancelar-edicao" type="button" hidden>Cancelar edição</button></div>
         </form>
         <div class="tabela-wrap"><table><thead><tr><th>ID</th><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody>
-        ${state.doadores.map(d => `<tr><td>${d.id_doador}</td><td>${esc(d.nome)}</td><td>${esc(d.email || "—")}</td><td>${esc(d.telefone || "—")}</td><td>${esc(d.data_cadastro || "—")}</td><td class="acoes-tabela"><button class="link" data-editar="${d.id_doador}">Editar</button><button class="link perigo" data-excluir="${d.id_doador}">Excluir</button></td></tr>`).join("") || '<tr><td colspan="6" class="vazio">Nenhum doador cadastrado.</td></tr>'}
+        ${state.doadores.map(d => `<tr><td>${d.id_doador}</td><td>${esc(d.nome)}</td><td>${esc(d.email || "—")}</td><td>${esc(d.telefone || "—")}</td><td>${esc(d.data_cadastro || "—")}</td><td class="acoes-tabela"><button class="link" data-editar="${d.id_doador}">Editar</button>${state.usuario?.perfil === "administrador" ? `<button class="link perigo" data-excluir="${d.id_doador}">Excluir</button>` : ""}</td></tr>`).join("") || '<tr><td colspan="6" class="vazio">Nenhum doador cadastrado.</td></tr>'}
         </tbody></table></div>
       </section>
       <section class="painel" id="painel-doacoes" ${state.aba !== "doacoes" ? "hidden" : ""}>
@@ -138,6 +149,12 @@ function render() {
       <footer>Projeto Integrador Extensionista II · Mãos que Ajudam</footer>
     </main>`;
 
+  document.querySelector("#sair")?.addEventListener("click", () => {
+    state.token = null;
+    state.usuario = null;
+    sessionStorage.removeItem("maos_token");
+    renderLogin();
+  });
   app.querySelectorAll("[data-aba]").forEach(b => b.addEventListener("click", () => mudarAba(b.dataset.aba)));
   document.querySelector("#atualizar")?.addEventListener("click", () => carregar().catch(e => aviso(e.message, "erro")));
   document.querySelector("#atualizar-doadores")?.addEventListener("click", () => carregar().catch(e => aviso(e.message, "erro")));
@@ -153,7 +170,7 @@ function render() {
   }));
   document.querySelector("#form-doacao")?.addEventListener("submit", salvarDoacao);
   app.querySelectorAll("[data-status]").forEach(b => b.addEventListener("click", () => alterarStatus(Number(b.dataset.id), b.dataset.status)));
-  app.querySelectorAll("[data-comprovante]").forEach(b => b.addEventListener("click", () => imprimirComprovante(Number(b.dataset-comprovante))));
+  app.querySelectorAll("[data-comprovante]").forEach(b => b.addEventListener("click", () => imprimirComprovante(Number(b.dataset.comprovante))));
 }
 function renderHistorico(doacoes) {
   return `<div class="historico">${doacoes.map(d => {
@@ -257,12 +274,54 @@ async function alterarStatus(id, status) {
     aviso("Status atualizado e estoque sincronizado.");
   } catch (e) { aviso(e.message, "erro"); }
 }
+function renderLogin(mensagem = "") {
+  app.innerHTML = `<main class="login-wrap"><form id="form-login" class="login-card">
+    <div class="marca-login"><span class="simbolo" aria-hidden="true">♡</span><div><h1>Mãos que Ajudam</h1><p>Gestão de doações e solidariedade</p></div></div>
+    <h2>Acesse sua conta</h2><p class="login-descricao">Entre com as credenciais fornecidas pelo administrador.</p>
+    ${mensagem ? `<div class="aviso erro" role="alert">${esc(mensagem)}</div>` : ""}
+    <label>E-mail<input name="email" type="email" autocomplete="username" maxlength="100" required></label>
+    <label>Senha<input name="senha" type="password" autocomplete="current-password" maxlength="128" required></label>
+    <button class="botao primario" type="submit">Entrar</button>
+  </form></main>`;
+  document.querySelector("#form-login").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const botao = form.querySelector("button[type=submit]");
+    botao.disabled = true;
+    botao.textContent = "Validando...";
+    try {
+      const dados = Object.fromEntries(new FormData(form));
+      const resultado = await api("/api/auth/login", {
+        method: "POST", body: JSON.stringify(dados),
+      });
+      state.token = resultado.token;
+      state.usuario = resultado.usuario;
+      sessionStorage.setItem("maos_token", resultado.token);
+      await api("/api/auth/me");
+      await api("/api/health/ready");
+      await carregar();
+    } catch (erro) {
+      renderLogin(erro.message || "Não foi possível entrar.");
+    }
+  });
+}
 async function iniciar() {
-  app.innerHTML = '<main class="carregando"><h1>Mãos que Ajudam</h1><p>Conectando ao sistema...</p></main>';
-  try { await api("/api/health/ready"); await carregar(); }
-  catch (e) {
-    app.innerHTML = `<main class="falha"><h1>Mãos que Ajudam</h1><p>Não foi possível carregar os dados do sistema.</p><p>${esc(e.message)}</p><button class="botao primario" id="tentar">Tentar novamente</button></main>`;
+  if (!state.token) return renderLogin();
+  app.innerHTML = '<main class="carregando"><h1>Mãos que Ajudam</h1><p>Validando acesso...</p></main>';
+  try {
+    state.usuario = await api("/api/auth/me");
+    await api("/api/health/ready");
+    await carregar();
+  } catch (erro) {
+    if (erro.status === 401) return renderLogin("Sua sessão expirou. Entre novamente.");
+    app.innerHTML = `<main class="falha"><h1>Mãos que Ajudam</h1><p>Não foi possível carregar os dados do sistema.</p><p>${esc(erro.message)}</p><button class="botao primario" id="tentar">Tentar novamente</button><button class="botao secundario" id="voltar-login">Voltar ao login</button></main>`;
     document.querySelector("#tentar").addEventListener("click", iniciar);
+    document.querySelector("#voltar-login").addEventListener("click", () => {
+      state.token = null;
+      state.usuario = null;
+      sessionStorage.removeItem("maos_token");
+      renderLogin();
+    });
   }
 }
 iniciar();

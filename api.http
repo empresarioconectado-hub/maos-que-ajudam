@@ -1,13 +1,25 @@
 @baseUrl = http://localhost:3000
+@token = COLE_AQUI_O_TOKEN_RETORNADO_NO_LOGIN
+
+### Autenticar (copie o token da resposta para a variável @token)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@exemplo.com",
+  "senha": "SENHA_CONFIGURADA"
+}
 
 ### Saúde da API e conexão com o banco
 GET {{baseUrl}}/api/health
 
 ### Listar doadores
 GET {{baseUrl}}/api/doadores
+Authorization: Bearer {{token}}
 
 ### Cadastrar doador (use o ID retornado nos testes seguintes)
 POST {{baseUrl}}/api/doadores
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -20,6 +32,7 @@ Content-Type: application/json
 # Execute após o cadastro acima. Se o e-mail já existir de execução anterior,
 # o resultado 409 também é válido.
 POST {{baseUrl}}/api/doadores
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -30,9 +43,11 @@ Content-Type: application/json
 
 ### Consultar doador pelo ID
 GET {{baseUrl}}/api/doadores/1
+Authorization: Bearer {{token}}
 
 ### Atualizar doador pelo ID
 PUT {{baseUrl}}/api/doadores/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -43,12 +58,15 @@ Content-Type: application/json
 
 ### Listar catálogo de itens
 GET {{baseUrl}}/api/itens
+Authorization: Bearer {{token}}
 
 ### Listar doações com doador e itens
 GET {{baseUrl}}/api/doacoes
+Authorization: Bearer {{token}}
 
 ### Registrar doação (ajuste os IDs conforme as respostas da API)
 POST {{baseUrl}}/api/doacoes
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -64,9 +82,11 @@ Content-Type: application/json
 ### Teste HTTP 409: excluir doador com doação vinculada (esperado 409)
 # Ajuste o ID para o mesmo doador usado no POST /api/doacoes acima.
 DELETE {{baseUrl}}/api/doadores/1
+Authorization: Bearer {{token}}
 
 ### Teste de validação: nome obrigatório (esperado 400)
 POST {{baseUrl}}/api/doadores
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -76,6 +96,7 @@ Content-Type: application/json
 
 ### Teste de validação: quantidade positiva (esperado 400)
 POST {{baseUrl}}/api/doacoes
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -88,6 +109,7 @@ Content-Type: application/json
 
 ### Teste de integridade/rollback: item inexistente (esperado 400; nenhuma doação parcial)
 POST {{baseUrl}}/api/doacoes
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -102,25 +124,31 @@ Content-Type: application/json
 
 ### Teste HTTP 404: doador inexistente (esperado 404)
 GET {{baseUrl}}/api/doadores/999999
+Authorization: Bearer {{token}}
 
 ### Teste HTTP 400: JSON malformado (esperado 400)
 POST {{baseUrl}}/api/doadores
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "nome": "Sem fechar chave"
 
 ### Teste de rota inexistente (esperado 404 em JSON)
 GET {{baseUrl}}/api/rota-inexistente
+Authorization: Bearer {{token}}
 
 
 ### Consultar estoque atual
 GET {{baseUrl}}/api/estoque
+Authorization: Bearer {{token}}
 
 ### Consultar movimentações recentes
 GET {{baseUrl}}/api/estoque/movimentacoes?limit=50
+Authorization: Bearer {{token}}
 
 ### Confirmar recebimento da doação (substitua o ID)
 PATCH {{baseUrl}}/api/doacoes/1/status
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -129,6 +157,7 @@ Content-Type: application/json
 
 ### Confirmar distribuição (requer recebimento anterior e saldo disponível)
 PATCH {{baseUrl}}/api/doacoes/1/status
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -137,6 +166,8 @@ Content-Type: application/json
 
 ### Consultar indicadores gerenciais
 GET {{baseUrl}}/api/relatorios/resumo
+Authorization: Bearer {{token}}
 
 ### Exportar histórico em CSV
 GET {{baseUrl}}/api/relatorios/doacoes.csv
+Authorization: Bearer {{token}}

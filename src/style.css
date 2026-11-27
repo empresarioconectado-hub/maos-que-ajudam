@@ -14,3 +14,20 @@ a.botao{text-decoration:none;display:inline-flex;align-items:center}
 button:disabled{opacity:.55;cursor:not-allowed}
 :focus-visible{outline:3px solid #8ac9a8;outline-offset:2px}
 @media(max-width:720px){.status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.resumo{grid-template-columns:repeat(2,minmax(0,1fr))}.doacao{overflow-wrap:anywhere}.doacao ul{padding-left:18px}}
+
+
+.acoes-conta{display:flex;align-items:center;gap:10px}
+.botao.sair{background:#ffffff20;color:#fff;border:1px solid #ffffff55;padding:8px 12px}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#edf5ef,#f7faf8)}
+.login-card{width:min(100%,420px);background:#fff;border:1px solid #e1eae3;border-radius:18px;padding:30px;box-shadow:0 16px 50px #173b2a12;display:grid;gap:16px}
+.marca-login{display:flex;align-items:center;gap:13px;margin-bottom:8px}
+.marca-login .simbolo{background:#155b45;color:#fff}
+.marca-login h1{font-size:21px;margin:0;color:#155b45}
+.marca-login p{margin:4px 0 0;color:#718078;font-size:12px}
+.login-card h2{margin:0;color:#203b2e;font-size:20px}
+.login-descricao{margin:-10px 0 4px;color:#718078;font-size:13px}
+.login-card label{display:grid;gap:7px;color:#53645a;font-size:12px;font-weight:650}
+.login-card input{width:100%;border:1px solid #d7e2db;border-radius:8px;padding:12px;font:inherit;font-size:14px}
+.login-card input:focus{outline:3px solid #27956c25;border-color:#27956c}
+.login-card .botao{padding:13px}
+@media(max-width:720px){.acoes-conta{align-items:flex-end;flex-direction:column}.topo{align-items:center}.login-card{padding:24px}}

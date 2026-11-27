@@ -1,6 +1,6 @@
 # Referência da API
 
-A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`.
+A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`. Todos os endpoints, exceto verificações de saúde e login, exigem o cabeçalho `Authorization: Bearer <token>`. O token expira em oito horas.
 
 ## Saúde
 
@@ -9,6 +9,18 @@ A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`.
 | GET | `/api/health/live` | Confirma que o processo está ativo, sem consultar o banco |
 | GET | `/api/health/ready` | Verifica a disponibilidade do banco |
 | GET | `/api/health` | Retorna o estado da API, banco e horário |
+
+## Autenticação
+
+### `POST /api/auth/login`
+
+Corpo: `{ "email": "admin@exemplo.com", "senha": "senha-configurada" }`. Retorna token Bearer, duração de validade e dados básicos do usuário. Credenciais incorretas retornam `401`; excesso de tentativas retorna `429`.
+
+### `GET /api/auth/me`
+
+Retorna o perfil da conta autenticada. Contas inativas não podem acessar o recurso.
+
+Perfis: `administrador` e `operador`. A exclusão de doadores exige perfil `administrador`; operações de cadastro e gestão de doações podem ser realizadas por ambos.
 
 ## Doadores
 
@@ -59,7 +71,7 @@ Retorna o catálogo ordenado por categoria e nome.
 
 ### `GET /api/doacoes`
 
-Retorna doações com os dados resumidos do doador e seus itens.
+Retorna doações com os dados resumidos do doador e seus itens. Sem parâmetros, mantém a resposta em array para compatibilidade. Com `page` e/ou `limit`, retorna `data` e metadados `pagination`; o limite padrão é 20 e o máximo é 100.
 
 ### `POST /api/doacoes`
 
@@ -84,6 +96,9 @@ O identificador também é enviado no cabeçalho `X-Request-Id` e permite correl
 | 201 | Registro criado |
 | 204 | Exclusão concluída, sem corpo |
 | 400 | Entrada inválida |
+| 401 | Token ausente, inválido ou expirado / credenciais incorretas |
+| 403 | Perfil sem permissão para a operação |
+| 429 | Limite de tentativas de login excedido |
 | 404 | Recurso ou rota não encontrado |
 | 409 | Conflito de integridade ou duplicidade |
 | 413 | Corpo acima do limite de 100 KB |
