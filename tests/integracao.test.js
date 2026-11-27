@@ -184,14 +184,67 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   const csv = await exportacao.text();
   assert.ok(csv.includes("'=2+2"));
 
-  // Administradores podem executar a operação, mas a integridade referencial
-  // continua impedindo a exclusão de um doador com doações vinculadas.
+  const ajusteComoOperador = await request("/api/estoque/movimentacoes", {
+    method: "POST",
+    body: JSON.stringify({ id_item: 1, tipo: "entrada", quantidade: 1 }),
+  });
+  assert.equal(ajusteComoOperador.status, 403);
+  const limiteComoOperador = await request("/api/estoque/1/limite-minimo", {
+    method: "PATCH",
+    body: JSON.stringify({ quantidade_minima: 2 }),
+  });
+  assert.equal(limiteComoOperador.status, 403);
+
+  // Administradores podem ajustar o inventário, com saldo, movimentação e
+  // auditoria persistidos na mesma transação.
   const loginAdmin = await request("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email: emailAdmin, senha: "Outra-senha-forte-para-teste-2026!" }),
   });
   assert.equal(loginAdmin.status, 200);
   token = loginAdmin.body.token;
+  const saldoAntesAjuste = (await request("/api/estoque")).body.find(item => item.id_item === 1).quantidade_atual;
+  const entradaManual = await request("/api/estoque/movimentacoes", {
+    method: "POST",
+    body: JSON.stringify({ id_item: 1, tipo: "entrada", quantidade: 5, observacao: "Contagem física" }),
+  });
+  assert.equal(entradaManual.status, 201);
+  assert.equal(entradaManual.body.quantidade_atual, saldoAntesAjuste + 5);
+
+  const saidaManual = await request("/api/estoque/movimentacoes", {
+    method: "POST",
+    body: JSON.stringify({ id_item: 1, tipo: "saida", quantidade: 2, observacao: "Ajuste de inventário" }),
+  });
+  assert.equal(saidaManual.status, 201);
+  assert.equal(saidaManual.body.quantidade_atual, saldoAntesAjuste + 3);
+
+  const saidaExcessiva = await request("/api/estoque/movimentacoes", {
+    method: "POST",
+    body: JSON.stringify({ id_item: 1, tipo: "saida", quantidade: 9999 }),
+  });
+  assert.equal(saidaExcessiva.status, 409);
+
+  const limiteMinimo = await request("/api/estoque/1/limite-minimo", {
+    method: "PATCH",
+    body: JSON.stringify({ quantidade_minima: saldoAntesAjuste + 4 }),
+  });
+  assert.equal(limiteMinimo.status, 200);
+  const estoqueBaixo = (await request("/api/estoque")).body.find(item => item.id_item === 1);
+  assert.equal(estoqueBaixo.estoque_baixo, 1);
+  assert.equal(estoqueBaixo.quantidade_minima, saldoAntesAjuste + 4);
+
+  const limiteDesativado = await request("/api/estoque/1/limite-minimo", {
+    method: "PATCH",
+    body: JSON.stringify({ quantidade_minima: 0 }),
+  });
+  assert.equal(limiteDesativado.status, 200);
+
+  const [auditoriaEstoque] = await pool.execute(
+    "SELECT COUNT(*) AS total FROM auditoria WHERE entidade = 'estoque' AND id_entidade = ? AND id_usuario = ?",
+    [1, loginAdmin.body.usuario.id_usuario],
+  );
+  assert.ok(auditoriaEstoque[0].total >= 4);
+
   const exclusaoComAdmin = await request(`/api/doadores/${idDoador}`, { method: "DELETE" });
   assert.equal(exclusaoComAdmin.status, 409);
 
