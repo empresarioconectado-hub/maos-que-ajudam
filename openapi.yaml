@@ -251,10 +251,15 @@ paths:
   /api/estoque:
     get:
       tags: [Estoque]
-      summary: Lista saldos atuais por item
+      summary: Lista saldos atuais, limites mínimos e alertas
       responses:
         '200':
           description: Saldos atuais
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EstoqueItem' }
   /api/estoque/movimentacoes:
     get:
       tags: [Estoque]
@@ -266,6 +271,11 @@ paths:
       responses:
         '200':
           description: Histórico de movimentações
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MovimentacaoEstoque' }
         '400':
           $ref: '#/components/responses/RequisicaoInvalida'
     post:
@@ -279,6 +289,9 @@ paths:
       responses:
         '201':
           description: Ajuste registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResultadoAjusteEstoque' }
         '400':
           $ref: '#/components/responses/RequisicaoInvalida'
         '403':
@@ -302,6 +315,15 @@ paths:
       responses:
         '200':
           description: Limite atualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id_item: { type: integer }
+                  quantidade_atual: { type: integer, minimum: 0 }
+                  quantidade_minima: { type: integer, minimum: 0 }
+                required: [id_item, quantidade_atual, quantidade_minima]
         '400':
           $ref: '#/components/responses/RequisicaoInvalida'
         '403':
@@ -388,6 +410,39 @@ components:
         type: integer
         minimum: 1
   schemas:
+    EstoqueItem:
+      type: object
+      properties:
+        id_item: { type: integer }
+        nome: { type: string }
+        unidade: { type: string }
+        categoria: { type: string }
+        quantidade_atual: { type: integer, minimum: 0 }
+        quantidade_minima: { type: integer, minimum: 0 }
+        estoque_baixo: { type: integer, enum: [0, 1] }
+        atualizado_em: { type: string, format: date-time, nullable: true }
+      required: [id_item, nome, unidade, categoria, quantidade_atual, quantidade_minima, estoque_baixo]
+    MovimentacaoEstoque:
+      type: object
+      properties:
+        id_movimentacao: { type: integer }
+        id_item: { type: integer }
+        nome_item: { type: string }
+        tipo: { type: string, enum: [entrada, saida] }
+        quantidade: { type: integer, minimum: 1 }
+        origem: { type: string }
+        id_referencia: { type: integer, nullable: true }
+        observacao: { type: string, nullable: true }
+        criado_em: { type: string, format: date-time }
+      required: [id_movimentacao, id_item, nome_item, tipo, quantidade, origem, criado_em]
+    ResultadoAjusteEstoque:
+      type: object
+      properties:
+        id_item: { type: integer }
+        tipo: { type: string, enum: [entrada, saida] }
+        quantidade: { type: integer, minimum: 1 }
+        quantidade_atual: { type: integer, minimum: 0 }
+      required: [id_item, tipo, quantidade, quantidade_atual]
     NovoAjusteEstoque:
       type: object
       properties:
