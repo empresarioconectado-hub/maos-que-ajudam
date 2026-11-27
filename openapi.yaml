@@ -14,6 +14,8 @@ tags:
   - name: Doadores
   - name: Itens
   - name: Doações
+  - name: Estoque
+  - name: Relatórios
 paths:
   /api/health/live:
     get:
@@ -175,6 +177,77 @@ paths:
                 items: { $ref: '#/components/schemas/ItemCatalogo' }
         '500':
           $ref: '#/components/responses/ErroInterno'
+  /api/doacoes/{id}/status:
+    patch:
+      tags: [Doações]
+      summary: Atualiza o estado operacional de uma doação
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [recebida, distribuida, cancelada]
+              required: [status]
+      responses:
+        '200':
+          description: Status atualizado e estoque sincronizado
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+        '404':
+          $ref: '#/components/responses/NaoEncontrado'
+        '409':
+          description: Transição inválida ou saldo insuficiente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Erro' }
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+  /api/estoque:
+    get:
+      tags: [Estoque]
+      summary: Lista saldos atuais por item
+      responses:
+        '200':
+          description: Saldos atuais
+  /api/estoque/movimentacoes:
+    get:
+      tags: [Estoque]
+      summary: Lista movimentações recentes
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        '200':
+          description: Histórico de movimentações
+        '400':
+          $ref: '#/components/responses/RequisicaoInvalida'
+  /api/relatorios/resumo:
+    get:
+      tags: [Relatórios]
+      summary: Retorna indicadores operacionais
+      responses:
+        '200':
+          description: Indicadores gerais
+  /api/relatorios/doacoes.csv:
+    get:
+      tags: [Relatórios]
+      summary: Exporta doações em CSV
+      responses:
+        '200':
+          description: Arquivo CSV
+          content:
+            text/csv:
+              schema: { type: string }
   /api/doacoes:
     get:
       tags: [Doações]
@@ -288,11 +361,12 @@ components:
         id_doacao: { type: integer }
         data_doacao: { type: string, format: date }
         observacao: { type: string, nullable: true }
+        status: { type: string, enum: [registrada, recebida, distribuida, cancelada] }
         doador: { $ref: '#/components/schemas/DoadorResumo' }
         itens:
           type: array
           items: { $ref: '#/components/schemas/ItemDoacao' }
-      required: [id_doacao, data_doacao, doador, itens]
+      required: [id_doacao, data_doacao, status, doador, itens]
     NovaDoacao:
       type: object
       properties:

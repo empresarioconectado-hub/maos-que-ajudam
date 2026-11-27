@@ -34,7 +34,7 @@ test("aceita doação com data válida e itens distintos", () => {
 test("rejeita doação sem itens, com data impossível ou identificador inválido", () => {
   assert.match(validarDoacao({ id_doador: 1, data_doacao: "2026-02-30", itens: [{ id_item: 1, quantidade: 1 }] }), /Data da doação inválida/);
   assert.match(validarDoacao({ id_doador: 0, data_doacao: "2026-11-27", itens: [{ id_item: 1, quantidade: 1 }] }), /ID do doador inválido/);
-  assert.match(validarDoacao({ id_doador: 1, data_doacao: "2026-11-27", itens: [] }), /pelo menos um item/);
+  assert.match(validarDoacao({ id_doador: 1, data_doacao: "2026-11-27", itens: [] }), /entre 1 e 100/);
 });
 
 test("rejeita quantidade não positiva, item inválido ou item repetido", () => {
@@ -42,6 +42,12 @@ test("rejeita quantidade não positiva, item inválido ou item repetido", () => 
   assert.match(validarDoacao({ ...base, itens: [{ id_item: 1, quantidade: 0 }] }), /quantidade/);
   assert.match(validarDoacao({ ...base, itens: [{ id_item: 0, quantidade: 1 }] }), /ID do item/);
   assert.match(validarDoacao({ ...base, itens: [{ id_item: 1, quantidade: 1 }, { id_item: 1, quantidade: 2 }] }), /repetir itens/);
+});
+
+test("rejeita quantidades acima do limite INT do banco e listas excessivas", () => {
+  const base = { id_doador: 1, data_doacao: "2026-11-27" };
+  assert.match(validarDoacao({ ...base, itens: [{ id_item: 1, quantidade: 2147483648 }] }), /quantidade/);
+  assert.match(validarDoacao({ ...base, itens: Array.from({ length: 101 }, (_, i) => ({ id_item: i + 1, quantidade: 1 })) }), /1 e 100/);
 });
 
 test("rejeita observação acima do limite", () => {

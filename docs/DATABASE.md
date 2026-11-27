@@ -62,6 +62,7 @@ A combinação de categoria e nome do item é única.
 | `id_doador` | INT | FK para `doador` |
 | `data_doacao` | DATE | Obrigatório |
 | `observacao` | VARCHAR(255) | Opcional |
+| `status` | VARCHAR(20) | `registrada`, `recebida`, `distribuida` ou `cancelada` |
 
 Há índice para a data e para a chave estrangeira do doador.
 
@@ -116,3 +117,32 @@ O usuário da aplicação deve receber apenas as permissões necessárias ao sch
 ## Evolução do schema
 
 O script atual é destinado à criação inicial. Não substitui uma ferramenta de migração para mudanças futuras em bancos já utilizados. Alterações estruturais em ambientes persistentes devem ser versionadas, revisadas e testadas antes da aplicação.
+
+
+## Gestão operacional (extensão)
+
+O modelo original do PIE II foi preservado. A gestão operacional foi acrescentada com estruturas complementares:
+
+### `estoque`
+
+Mantém o saldo atual por item. O saldo não é alterado no simples registro de uma doação; ele é atualizado somente quando o recebimento é confirmado ou a distribuição é concluída.
+
+### `movimentacao_estoque`
+
+Registra cada entrada ou saída, com item, quantidade, origem e referência à doação quando aplicável. As movimentações originadas por mudança de status são gravadas na mesma transação da atualização do saldo.
+
+### `auditoria`
+
+Registra a criação da doação e as transições de status, armazenando detalhes em JSON. A tabela não deve ser usada como substituta de trilha de auditoria de autenticação: a aplicação ainda não identifica operadores porque não possui login e controle de acesso.
+
+### Migração em bancos existentes
+
+Para uma base já criada com a versão anterior do schema, faça backup e execute uma única vez:
+
+```bash
+mariadb -u root -p maos_que_ajudam < database/migrations/002_gestao_operacional.sql
+```
+
+A migração adiciona o status padrão `registrada`, cria as tabelas complementares e inicializa saldo zero para os itens existentes. Não a execute novamente após sucesso, pois a alteração da coluna e da constraint não é idempotente.
+
+Para bancos novos, utilize o `database/schema.sql` atualizado; não execute a migração 002 novamente.

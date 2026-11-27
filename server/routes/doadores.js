@@ -9,7 +9,7 @@ const router = Router();
 function validarId(valor) {
   if (!/^[1-9]\d*$/.test(valor)) return null;
   const id = Number(valor);
-  return Number.isSafeInteger(id) ? id : null;
+  return Number.isSafeInteger(id) && id <= 2147483647 ? id : null;
 }
 
 const CAMPOS_DOADOR = "id_doador, nome, email, telefone, data_cadastro";

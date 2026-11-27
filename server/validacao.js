@@ -53,7 +53,7 @@ export function validarDoacao(dados = {}) {
 
   const { id_doador, data_doacao, observacao, itens } = dados;
 
-  if (!Number.isInteger(id_doador) || id_doador <= 0) {
+  if (!Number.isSafeInteger(id_doador) || id_doador <= 0 || id_doador > 2147483647) {
     return "ID do doador inválido";
   }
 
@@ -80,8 +80,8 @@ export function validarDoacao(dados = {}) {
     return "Observação deve ter no máximo 255 caracteres";
   }
 
-  if (!Array.isArray(itens) || itens.length === 0) {
-    return "A doação deve possuir pelo menos um item";
+  if (!Array.isArray(itens) || itens.length === 0 || itens.length > 100) {
+    return "A doação deve possuir entre 1 e 100 itens";
   }
 
   const idsItens = new Set();
@@ -90,13 +90,13 @@ export function validarDoacao(dados = {}) {
     if (
       !item ||
       typeof item !== "object" ||
-      !Number.isInteger(item.id_item) ||
-      item.id_item <= 0
+      !Number.isSafeInteger(item.id_item) ||
+      item.id_item <= 0 || item.id_item > 2147483647
     ) {
       return "ID do item inválido";
     }
 
-    if (!Number.isInteger(item.quantidade) || item.quantidade <= 0) {
+    if (!Number.isSafeInteger(item.quantidade) || item.quantidade <= 0 || item.quantidade > 2147483647) {
       return "A quantidade de cada item deve ser um número inteiro positivo";
     }
 
