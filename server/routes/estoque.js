@@ -1,5 +1,6 @@
 import { Router } from "express";
 import pool from "../db.js";
+import { HttpError } from "../erros.js";
 
 const router = Router();
 
@@ -15,9 +16,10 @@ router.get("/", async (_req, res) => {
 });
 
 router.get("/movimentacoes", async (req, res) => {
-  const limite = req.query.limit === undefined ? 50 : Number(req.query.limit);
-  if (!Number.isSafeInteger(limite) || limite < 1 || limite > 200) {
-    return res.status(400).json({ erro: "O parâmetro limit deve estar entre 1 e 200" });
+  const limiteTexto = req.query.limit;
+  const limite = limiteTexto === undefined ? 50 : Number(limiteTexto);
+  if ((limiteTexto !== undefined && (typeof limiteTexto !== "string" || !/^[1-9]\\d*$/.test(limiteTexto))) || !Number.isSafeInteger(limite) || limite < 1 || limite > 200) {
+    throw new HttpError(400, "O parâmetro limit deve ser um inteiro entre 1 e 200");
   }
   const [rows] = await pool.execute(
     "SELECT m.id_movimentacao, m.id_item, i.nome AS nome_item, i.unidade, " +
