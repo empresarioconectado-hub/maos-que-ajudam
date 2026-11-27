@@ -101,7 +101,7 @@ mariadb -u root -p < database/seed.sql
 | GET/POST | `/api/doadores` | Listagem e cadastro |
 | GET/PUT/DELETE | `/api/doadores/:id` | Consulta, edição e exclusão |
 | GET | `/api/itens` | Catálogo |
-| GET/POST | `/api/doacoes` | Consulta e registro de doações |
+| GET/POST | `/api/doacoes` | Consulta e registro de doações |\n| GET | `/api/estoque` | Saldos e alertas de reposição |\n| GET/POST | `/api/estoque/movimentacoes` | Histórico e ajustes manuais (administrador) |\n| PATCH | `/api/estoque/:id/limite-minimo` | Configuração de alerta (administrador) |\n| GET | `/api/relatorios/resumo` | Indicadores gerenciais |\n| GET | `/api/relatorios/doacoes.csv` | Exportação CSV |
 | PATCH | `/api/doacoes/:id/status` | Atualização controlada do ciclo da doação |
 | GET | `/api/estoque` | Saldos atuais por item |
 | GET | `/api/estoque/movimentacoes` | Histórico de entradas e saídas |
