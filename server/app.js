@@ -10,8 +10,6 @@ import estoqueRoutes from "./routes/estoque.js";
 import relatoriosRoutes from "./routes/relatorios.js";
 
 const app = express();
-const PORT = Number(process.env.PORT || 3000);
-
 app.disable("x-powered-by");
 app.use((req, res, next) => {
   req.requestId = randomUUID();
