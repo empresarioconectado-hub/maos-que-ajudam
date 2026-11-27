@@ -133,13 +133,41 @@ O modelo original do PIE II foi preservado. A gestão operacional foi acrescenta
 
 Mantém o saldo atual e a quantidade mínima para alerta por item. A constraint impede saldos ou limites negativos. O saldo não é alterado no simples registro de uma doação; ele é atualizado quando o recebimento é confirmado, a distribuição é concluída ou um administrador registra um ajuste manual.
 
+| Campo | Tipo | Regra |
+|---|---|---|
+| `id_item` | INT | PK e FK para `item` |
+| `quantidade_atual` | INT | Saldo não negativo |
+| `quantidade_minima` | INT | Limite de alerta, não negativo, padrão zero |
+| `atualizado_em` | TIMESTAMP | Atualizado em alterações de saldo/limite |
+
 ### `movimentacao_estoque`
 
 Registra cada entrada ou saída, com item, quantidade, origem e referência à doação quando aplicável. As movimentações originadas por mudança de status ou ajuste manual são gravadas na mesma transação da atualização do saldo. Ajustes manuais são restritos ao perfil administrador.
 
+| Campo | Tipo | Regra |
+|---|---|---|
+| `id_movimentacao` | BIGINT | Chave primária, incremento automático |
+| `id_item` | INT | FK para `item` |
+| `tipo` | VARCHAR(10) | `entrada` ou `saida` |
+| `quantidade` | INT | Maior que zero |
+| `origem` | VARCHAR(30) | `doacao` ou `ajuste_manual` |
+| `id_referencia` | INT | Referência à doação quando aplicável |
+| `observacao` | VARCHAR(255) | Opcional |
+| `criado_em` | TIMESTAMP | Data da movimentação |
+
 ### `auditoria`
 
-Registra a criação da doação e as transições de status, armazenando detalhes em JSON e o usuário autenticado responsável. A chave estrangeira utiliza `ON DELETE SET NULL` para preservar os eventos mesmo que uma conta seja removida.
+Registra a criação de doações, transições de status, ajustes de estoque e mudanças de limite mínimo, armazenando detalhes em JSON e o usuário autenticado responsável. A chave estrangeira utiliza `ON DELETE SET NULL` para preservar os eventos mesmo que uma conta seja removida.
+
+| Campo | Tipo | Regra |
+|---|---|---|
+| `id_auditoria` | BIGINT | Chave primária |
+| `entidade` | VARCHAR(50) | Tipo do registro afetado |
+| `id_entidade` | BIGINT | Identificador do registro afetado |
+| `acao` | VARCHAR(50) | Operação realizada |
+| `detalhes` | JSON | Valores relevantes da operação |
+| `id_usuario` | INT | FK para `usuario`, nulo se a conta for removida |
+| `criado_em` | TIMESTAMP | Data do evento |
 
 ### Migração em bancos existentes
 
