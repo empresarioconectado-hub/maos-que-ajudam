@@ -12,6 +12,12 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     return;
   }
 
+  let servidor;
+  t.after(async () => {
+    if (servidor) await new Promise(resolve => servidor.close(resolve));
+    await pool.end();
+  });
+
   const emailOperador = `operador-${Date.now()}@exemplo.test`;
   const hashSenha = await gerarHashSenha("Senha-forte-para-teste-2026!");
   const emailAdmin = `admin-${Date.now()}@exemplo.test`;
@@ -24,12 +30,6 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
     "INSERT INTO usuario (nome, email, senha_hash, perfil) VALUES (?, ?, ?, 'administrador')",
     ["Administrador de teste", emailAdmin, hashAdmin],
   );
-
-  let servidor;
-  t.after(async () => {
-    if (servidor) await new Promise(resolve => servidor.close(resolve));
-    await pool.end();
-  });
   servidor = app.listen(0);
   await new Promise(resolve => servidor.once("listening", resolve));
 
