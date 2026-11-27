@@ -47,7 +47,7 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 ```bash
 git clone https://github.com/empresarioconectado-hub/maos-que-ajudam.git
 cd maos-que-ajudam
-npm install
+npm ci
 mariadb -u root -p < database/schema.sql
 cp .env.example .env
 ```
