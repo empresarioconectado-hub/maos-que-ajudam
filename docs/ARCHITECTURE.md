@@ -14,7 +14,10 @@ Navegador → Vite / Frontend → API Express → Pool mysql2 → MariaDB
 - `server/routes/`: endpoints organizados por recurso.
 - `server/validacao.js`: validação e normalização de dados de entrada.
 - `server/paginacao.js`: validação de parâmetros e metadados de paginação.
-- `server/db.js`: pool de conexões com o banco.\n- `server/auth.js`: derivação e verificação de senhas, assinatura de tokens e autorização por perfil.\n- `server/routes/auth.js`: login e consulta da conta autenticada.\n- `scripts/criar-usuario.js`: provisionamento inicial de contas, sem credenciais padrão.
+- `server/db.js`: pool de conexões com o banco.
+- `server/auth.js`: derivação e verificação de senhas, assinatura de tokens e autorização por perfil.
+- `server/routes/auth.js`: login e consulta da conta autenticada.
+- `scripts/criar-usuario.js`: provisionamento inicial de contas, sem credenciais padrão.
 - `database/`: schema e carga de demonstração.
 - `tests/`: testes unitários e de integração HTTP com MariaDB.
 
