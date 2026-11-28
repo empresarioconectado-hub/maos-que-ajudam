@@ -33,7 +33,7 @@ O endpoint `POST /api/auth/logout` revoga a sessão apresentada. `POST /api/auth
 - O token do navegador permanece em `sessionStorage`; XSS pode acessá-lo. CSP da API não substitui CSP no servidor que entrega o frontend. A hospedagem do frontend deve enviar sua própria CSP, preferencialmente com nonce/hash e sem `unsafe-inline`.
 - Não há HTTPS configurado pelo código: certificado, redirecionamento HTTP→HTTPS, renovação TLS e HSTS dependem do domínio/proxy/hospedagem.
 - CORS precisa ser configurado com os domínios reais do frontend. Não habilite curingas para uma aplicação autenticada.
-- Ainda não há testes E2E com navegador real, análise DAST ou pentest independente.
+- O CI possui um fluxo E2E inicial em Chromium para login, carregamento do painel e revogação no logout; ainda falta ampliar cobertura dos fluxos de negócio, análise DAST e pentest independente.
 - Backup e restauração possuem scripts, mas o agendamento, armazenamento externo, criptografia em repouso, alertas e testes regulares precisam ser configurados no ambiente operacional.
 - Não há monitoramento externo ou gestão centralizada de logs.
 - A adequação à LGPD depende de decisões institucionais e jurídicas sobre finalidade, base legal, minimização, transparência, retenção, descarte e atendimento aos titulares.
@@ -65,7 +65,7 @@ Ative `TRUST_PROXY=1` somente quando houver proxy reverso conhecido e corretamen
 4. Implementar MFA e recuperação de senha com canal de entrega seguro, tokens de uso único, expiração e auditoria.
 5. Definir armazenamento externo, criptografia, retenção e agendamento dos backups; realizar exercícios de restauração documentados.
 6. Configurar monitoramento externo, alertas, retenção de logs e resposta a incidentes.
-7. Executar E2E, SAST/DAST, análise de dependências e pentest independente.
+7. Ampliar a cobertura E2E dos fluxos críticos, executar SAST/DAST, análise de dependências e pentest independente.
 8. Formalizar inventário de dados, finalidade, base legal, aviso de privacidade, retenção, descarte e processo de atendimento aos titulares.
 9. Revisar privilégios do banco, gestão/rotação de segredos, política de acesso administrativo e segregação de ambientes.
 
