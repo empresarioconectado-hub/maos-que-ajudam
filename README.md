@@ -145,6 +145,7 @@ O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `
 - [Contribuição](docs/CONTRIBUTING.md)
 - [Segurança](docs/SECURITY.md)
 - [Operação, backup e recuperação](docs/OPERATIONS.md)
+- [Privacidade e governança LGPD](docs/PRIVACY.md)
 
 ## Segurança e limitações
 
