@@ -1,5 +1,7 @@
 # Backups locais nunca devem ser versionados.
 /backups/
+/test-results/
+/playwright-report/
 *.sql.gz
 
 # Logs
