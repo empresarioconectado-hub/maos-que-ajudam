@@ -51,6 +51,24 @@ paths:
           description: Conta autenticada
         '401':
           $ref: '#/components/responses/NaoAutorizado'
+  /api/auth/logout:
+    post:
+      tags: [Autenticação]
+      summary: Revoga a sessão atual
+      responses:
+        '204':
+          description: Sessão revogada
+        '401':
+          $ref: '#/components/responses/NaoAutorizado'
+  /api/auth/logout-all:
+    post:
+      tags: [Autenticação]
+      summary: Revoga todas as sessões da conta autenticada
+      responses:
+        '204':
+          description: Todas as sessões foram revogadas
+        '401':
+          $ref: '#/components/responses/NaoAutorizado'
   /api/health/live:
     get:
       security: []
