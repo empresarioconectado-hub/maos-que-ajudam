@@ -1,6 +1,6 @@
 # Referência da API
 
-A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`. Todos os endpoints, exceto verificações de saúde e login, exigem o cabeçalho `Authorization: Bearer <token>`. O token expira em oito horas.
+A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`. Todos os endpoints, exceto verificações de saúde e login, exigem o cabeçalho `Authorization: Bearer <token>`. O token expira em oito horas e é vinculado a uma sessão persistida em `sessao_usuario`; a API consulta a sessão em cada requisição protegida.
 
 ## Saúde
 
@@ -14,11 +14,19 @@ A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`. Todos
 
 ### `POST /api/auth/login`
 
-Corpo: `{ "email": "admin@exemplo.com", "senha": "senha-configurada" }`. Retorna token Bearer, duração de validade e dados básicos do usuário. Credenciais incorretas retornam `401`; excesso de tentativas retorna `429`.
+Corpo: `{ "email": "admin@exemplo.com", "senha": "senha-configurada" }`. Retorna token Bearer, duração de validade e dados básicos do usuário. Credenciais incorretas retornam `401`; após dez tentativas na janela de quinze minutos por endereço de origem, novas tentativas retornam `429` até a janela expirar. O contador é compartilhado pelo banco entre instâncias e armazena um HMAC do endereço, não o IP bruto.
 
 ### `GET /api/auth/me`
 
-Retorna o perfil da conta autenticada. Contas inativas não podem acessar o recurso.
+Retorna o perfil da conta autenticada. Contas inativas, sessões revogadas ou sessões expiradas não podem acessar o recurso.
+
+### `POST /api/auth/logout`
+
+Revoga a sessão vinculada ao token apresentado. Retorna HTTP 204 sem corpo.
+
+### `POST /api/auth/logout-all`
+
+Revoga todas as sessões ativas da conta autenticada. Retorna HTTP 204 sem corpo; a conta precisará entrar novamente nos demais dispositivos.
 
 Perfis: `administrador` e `operador`. A exclusão de doadores exige perfil `administrador`; operações de cadastro e gestão de doações podem ser realizadas por ambos.
 

@@ -166,7 +166,8 @@ function render() {
       <footer>Projeto Integrador Extensionista II · Mãos que Ajudam</footer>
     </main>`;
 
-  document.querySelector("#sair")?.addEventListener("click", () => {
+  document.querySelector("#sair")?.addEventListener("click", async () => {
+    try { await api("/api/auth/logout", { method: "POST" }); } catch { /* A limpeza local continua mesmo sem conexão. */ }
     state.token = null;
     state.usuario = null;
     sessionStorage.removeItem("maos_token");

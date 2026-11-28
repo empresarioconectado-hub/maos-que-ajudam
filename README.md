@@ -18,7 +18,10 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 - Verificações de liveness e readiness da API.
 - Login com senha protegida por scrypt e token Bearer com expiração de 8 horas.
 - Perfis de administrador e operador, com exclusão de doadores restrita ao administrador.
-- Limitação de tentativas de login.
+- Limitação compartilhada de tentativas de login, persistida no banco e compatível com múltiplas instâncias.
+- Sessões persistidas e revogáveis; logout individual e encerramento de todas as sessões da conta.
+- CORS por allowlist, cabeçalhos defensivos e opções explícitas de HSTS/proxy reverso.
+- Scripts de backup e restauração do MariaDB/MySQL, com validação do arquivo e confirmação para restauração.
 - Identificador de requisição para rastrear erros.
 
 ## Tecnologias
@@ -51,7 +54,7 @@ mariadb -u root -p < database/schema.sql
 cp .env.example .env
 ```
 
-Configure o arquivo `.env`. Gere `AUTH_SECRET` com `openssl rand -hex 32` e mantenha o valor em segredo:
+Configure o arquivo `.env`. Gere `AUTH_SECRET` com `openssl rand -hex 32` e mantenha o valor em segredo. Em desenvolvimento, mantenha a origem local do Vite em `CORS_ORIGINS`; em produção, substitua pela origem HTTPS exata do frontend. `TRUST_PROXY` e `ENABLE_HSTS` permanecem desativados localmente:
 
 ```dotenv
 DB_HOST=127.0.0.1
@@ -61,6 +64,9 @@ DB_PASSWORD=sua_senha_local
 DB_NAME=maos_que_ajudam
 PORT=3000
 AUTH_SECRET=
+CORS_ORIGINS=http://localhost:5173
+TRUST_PROXY=0
+ENABLE_HSTS=0
 ```
 
 Crie um usuário de banco dedicado e conceda apenas as permissões necessárias. Não use a conta administrativa em uma instalação compartilhada.
@@ -97,6 +103,8 @@ mariadb -u root -p < database/seed.sql
 | GET | `/api/health/ready` | Readiness do banco |
 | POST | `/api/auth/login` | Autenticação e emissão de token |
 | GET | `/api/auth/me` | Dados da conta autenticada |
+| POST | `/api/auth/logout` | Revoga a sessão atual |
+| POST | `/api/auth/logout-all` | Revoga todas as sessões da conta |
 | GET/POST | `/api/doadores` | Listagem e cadastro |
 | GET/PUT/DELETE | `/api/doadores/:id` | Consulta, edição e exclusão |
 | GET | `/api/itens` | Catálogo |
@@ -121,11 +129,13 @@ npm test
 npm run build
 ```
 
-Os testes cobrem hash de senhas, assinatura e expiração de tokens, validações, paginação, regras de transição, autenticação, autorização, rollback transacional, movimentações automáticas e manuais, alertas de estoque mínimo, auditoria e exportação CSV. O CI também reaplica o seed para verificar que a carga de demonstração é idempotente. O workflow inicializa MariaDB 10.11, executa o schema duas vezes, reaplica as migrações e roda os testes de integração antes do build. Ainda não há suíte E2E em navegador.
+O teste E2E de navegador é executado no GitHub Actions. Para executá-lo localmente, instale temporariamente `@playwright/test`, instale o Chromium com `npx playwright install chromium` e rode `npx playwright test`.
+
+Os testes cobrem hash de senhas, assinatura e expiração de tokens, revogação de sessões, validações, paginação, regras de transição, autenticação, autorização, rollback transacional, movimentações automáticas e manuais, alertas de estoque mínimo, auditoria, CORS e exportação CSV. O CI inicializa MariaDB 10.11, executa schema, migrações e seed duas vezes, roda testes unitários e de integração, valida o fluxo de login/logout em Chromium e gera o build.
 
 ## Banco de dados
 
-O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas e perfis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem, [a migração 002](database/migrations/002_gestao_operacional.sql) e [a migração 003](database/migrations/003_autenticacao.sql) e [a migração 004](database/migrations/004_limite_minimo_estoque.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
+O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas, perfis e sessões revogáveis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem: [002](database/migrations/002_gestao_operacional.sql), [003](database/migrations/003_autenticacao.sql), [004](database/migrations/004_limite_minimo_estoque.sql), [005](database/migrations/005_sessoes_revogaveis.sql) e [006](database/migrations/006_limite_login_compartilhado.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
 
 ## Documentação
 
@@ -134,12 +144,14 @@ O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `
 - [Banco de dados](docs/DATABASE.md)
 - [Contribuição](docs/CONTRIBUTING.md)
 - [Segurança](docs/SECURITY.md)
+- [Operação, backup e recuperação](docs/OPERATIONS.md)
+- [Privacidade e governança LGPD](docs/PRIVACY.md)
 
 ## Segurança e limitações
 
 A autenticação utiliza tokens Bearer assinados com `AUTH_SECRET`, senhas derivadas por scrypt e perfis de acesso. A trilha de auditoria registra criação e transições de status vinculadas à conta autenticada que executou a operação. As migrações são SQL versionadas e reexecutáveis, mas ainda não há um gerenciador automatizado de migrações. Os cabeçalhos HTTP e identificadores de requisição são medidas básicas, não uma certificação de segurança.
 
-A autenticação implementada é uma base para o projeto, não uma certificação de segurança. Antes de produção, configure HTTPS, CORS por allowlist, rate limiting distribuído, rotação de segredos, backups testados, monitoramento, política de sessão e revisão de privacidade/LGPD. O limitador de login atual é em memória e não substitui proteção distribuída. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
+A autenticação implementada é uma base para o projeto, não uma certificação de segurança. As sessões agora são persistidas e podem ser revogadas individualmente ou em conjunto. Ainda faltam MFA, recuperação de senha, implantação HTTPS, monitoramento externo e configuração de backup agendado em armazenamento independente. O limite de login é compartilhado pelo banco; proteção adicional no proxy/WAF ainda deve ser configurada. Os scripts de backup/restauração estão disponíveis, mas precisam ser agendados e testados no ambiente de implantação. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
 
 ## Contexto
 

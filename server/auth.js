@@ -1,6 +1,7 @@
 import {
   createHmac,
   randomBytes,
+  randomUUID,
   scrypt as scryptCallback,
   timingSafeEqual,
 } from "node:crypto";
@@ -41,9 +42,10 @@ function obterSegredo() {
   return segredo;
 }
 
-export function emitirToken(usuario, agora = Math.floor(Date.now() / 1000)) {
+export function emitirToken(usuario, agora = Math.floor(Date.now() / 1000), idSessao = randomUUID()) {
   const payload = Buffer.from(JSON.stringify({
     sub: usuario.id_usuario,
+    jti: idSessao,
     iat: agora,
     exp: agora + DURACAO_TOKEN_SEGUNDOS,
   })).toString("base64url");
@@ -73,12 +75,14 @@ export function validarToken(token, agora = Math.floor(Date.now() / 1000)) {
     throw new HttpError(401, "Token inválido");
   }
   if (!Number.isSafeInteger(payload.sub) || payload.sub <= 0 ||
+      typeof payload.jti !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.jti) ||
       !Number.isInteger(payload.exp) || payload.exp <= agora ||
       !Number.isInteger(payload.iat) || payload.iat > agora + 60 ||
       payload.exp - payload.iat > DURACAO_TOKEN_SEGUNDOS) {
     throw new HttpError(401, "Token expirado ou inválido");
   }
-  return { id_usuario: payload.sub };
+  return { id_usuario: payload.sub, id_sessao: payload.jti };
 }
 
 export async function autenticar(req, res, next) {
@@ -100,24 +104,25 @@ export async function autenticar(req, res, next) {
   }
 
   try {
-    // Consulta o estado atual da conta em cada requisição: desativação e mudança
-    // de perfil passam a valer imediatamente, sem aguardar a expiração do token.
     const [usuarios] = await pool.execute(
-      "SELECT id_usuario, nome, email, perfil, ativo FROM usuario WHERE id_usuario = ?",
-      [identidade.id_usuario]
+      "SELECT u.id_usuario, u.nome, u.email, u.perfil " +
+      "FROM usuario u INNER JOIN sessao_usuario s ON s.id_usuario = u.id_usuario " +
+      "WHERE u.id_usuario = ? AND u.ativo = 1 AND s.id_sessao = ? " +
+      "AND s.revogado_em IS NULL AND s.expira_em > UTC_TIMESTAMP() LIMIT 1",
+      [identidade.id_usuario, identidade.id_sessao]
     );
-    if (!usuarios.length || !usuarios[0].ativo) {
-      return res.status(401).json({ erro: "Conta inativa ou não encontrada", requestId: req.requestId });
+    if (!usuarios.length) {
+      return res.status(401).json({ erro: "Sessão encerrada ou expirada. Entre novamente.", requestId: req.requestId });
     }
-    const { ativo, ...usuario } = usuarios[0];
-    req.usuario = usuario;
+    req.usuario = usuarios[0];
+    req.idSessao = identidade.id_sessao;
     return next();
   } catch (erro) {
     console.error(JSON.stringify({
-      level: "error", message: "Falha ao consultar conta autenticada",
+      level: "error", message: "Falha ao consultar sessão autenticada",
       requestId: req.requestId, error: erro.message,
     }));
-    return res.status(503).json({ erro: "Não foi possível validar a conta neste momento", requestId: req.requestId });
+    return res.status(503).json({ erro: "Não foi possível validar a sessão neste momento", requestId: req.requestId });
   }
 }
 

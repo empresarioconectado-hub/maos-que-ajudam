@@ -29,6 +29,7 @@ jobs:
       DB_NAME: maos_que_ajudam
       TEST_DATABASE: "1"
       AUTH_SECRET: "segredo-exclusivo-para-testes-com-mais-de-32-bytes"
+      CORS_ORIGINS: "http://127.0.0.1:5173,http://localhost:5173"
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v4
@@ -39,6 +40,10 @@ jobs:
           cache: npm
       - name: Instalar dependências
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Instalar ferramenta de teste E2E
+        run: |
+          npm install --no-save --package-lock=false --no-audit --no-fund @playwright/test
+          npx playwright install --with-deps chromium
       - name: Preparar banco de testes
         run: |
           DB_CONTAINER="$(docker ps -q --filter ancestor=mariadb:10.11 | head -n 1)"
@@ -53,13 +58,27 @@ jobs:
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/003_autenticacao.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/004_limite_minimo_estoque.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/004_limite_minimo_estoque.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/005_sessoes_revogaveis.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/005_sessoes_revogaveis.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/006_limite_login_compartilhado.sql
+          docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/migrations/006_limite_login_compartilhado.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/seed.sql
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
         run: npm run prepare
-      - name: Verificar sintaxe JavaScript
-        run: find server scripts tests -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Verificar sintaxe JavaScript e scripts operacionais
+        run: |
+          find server scripts tests -name '*.js' -print0 | xargs -0 -n1 node --check
+          bash -n scripts/backup-db.sh scripts/restore-db.sh
       - name: Executar testes unitários e de integração
         run: npm test
+      - name: Criar conta administrativa isolada para E2E
+        env:
+          ADMIN_NAME: Administrador E2E
+          ADMIN_EMAIL: e2e-admin@exemplo.test
+          ADMIN_PASSWORD: Senha-E2E-forte-2026!
+        run: npm run admin:create
+      - name: Executar testes E2E no Chromium
+        run: npx playwright test
       - name: Gerar build do frontend
         run: npm run build

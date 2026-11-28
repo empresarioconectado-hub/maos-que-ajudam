@@ -17,10 +17,13 @@ test("rejeita senhas abaixo e acima do limite", async () => {
   await assert.rejects(() => gerarHashSenha("x".repeat(129)), { status: 400 });
 });
 
-test("valida assinatura, integridade e expiração do token bearer", () => {
+test("emite token com identificador único de sessão e valida integridade e expiração", () => {
   const agora = Math.floor(Date.now() / 1000);
   const token = emitirToken({ id_usuario: 7 }, agora);
-  assert.deepEqual(validarToken(token, agora + 1), { id_usuario: 7 });
+  const identidade = validarToken(token, agora + 1);
+  assert.equal(identidade.id_usuario, 7);
+  assert.match(identidade.id_sessao, /^[0-9a-f-]{36}$/i);
+  assert.deepEqual(validarToken(token, agora + 1), identidade);
   assert.throws(() => validarToken(token + "x", agora + 1), { status: 401 });
   assert.throws(() => validarToken(token, agora + 8 * 60 * 60), { status: 401 });
   assert.throws(() => validarToken("token.invalido", agora), { status: 401 });
