@@ -59,4 +59,4 @@ O modelo acadêmico central é formado por `doador`, `categoria`, `item`, `doaca
 
 ## Limitações arquiteturais
 
-O limitador de login é local ao processo, não há MFA nem recuperação de senha, e o frontend ainda mantém token em `sessionStorage`. A implantação HTTPS, CSP do frontend, monitoramento, armazenamento externo de backups, E2E de navegador e governança LGPD exigem configuração ou trabalho adicional antes de produção.
+O limitador de login é local ao processo, não há MFA nem recuperação de senha, e o frontend ainda mantém token em `sessionStorage`. A implantação HTTPS, CSP do frontend, monitoramento, armazenamento externo de backups, a cobertura E2E dos fluxos críticos, DAST/pentest e governança LGPD exigem trabalho adicional antes de produção. O CI já executa um cenário E2E inicial em Chromium para login, painel e logout revogável.
