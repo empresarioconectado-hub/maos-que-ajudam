@@ -14,7 +14,7 @@ A API utiliza HTTP e JSON. A URL local padrão é `http://localhost:3000`. Todos
 
 ### `POST /api/auth/login`
 
-Corpo: `{ "email": "admin@exemplo.com", "senha": "senha-configurada" }`. Retorna token Bearer, duração de validade e dados básicos do usuário. Credenciais incorretas retornam `401`; excesso de tentativas retorna `429`.
+Corpo: `{ "email": "admin@exemplo.com", "senha": "senha-configurada" }`. Retorna token Bearer, duração de validade e dados básicos do usuário. Credenciais incorretas retornam `401`; após dez tentativas na janela de quinze minutos por endereço de origem, novas tentativas retornam `429` até a janela expirar. O contador é compartilhado pelo banco entre instâncias e armazena um HMAC do endereço, não o IP bruto.
 
 ### `GET /api/auth/me`
 
