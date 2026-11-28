@@ -59,6 +59,20 @@ Após a importação:
 
 A instituição responsável deve aprovar RPO (perda máxima de dados aceitável), RTO (tempo máximo para recuperação), retenção e localização geográfica dos backups. Como ponto de partida para homologação, pode-se testar backup diário e restauração mensal; isso não é garantia de adequação a uma operação real.
 
+## Manutenção de registros técnicos
+
+Agende uma rotina de manutenção conforme a política de retenção aprovada. Exemplo de limpeza de dados técnicos antigos (ajuste os prazos antes de executar):
+
+```sql
+DELETE FROM limite_login
+WHERE janela_inicio < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY);
+
+DELETE FROM sessao_usuario
+WHERE expira_em < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY);
+```
+
+A retenção de logs de autenticação e sessões deve ser definida pelo responsável pela privacidade. Não remova registros de auditoria de operações sem política formal e autorização institucional.
+
 ## Monitoramento
 
 - Monitore `GET /api/health/live` para disponibilidade do processo.
