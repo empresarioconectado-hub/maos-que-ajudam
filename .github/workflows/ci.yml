@@ -64,8 +64,10 @@ jobs:
           docker exec -i "$DB_CONTAINER" mariadb -uroot -proot maos_que_ajudam < database/seed.sql
       - name: Preparar Vite+
         run: npm run prepare
-      - name: Verificar sintaxe JavaScript
-        run: find server scripts tests -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Verificar sintaxe JavaScript e scripts operacionais
+        run: |
+          find server scripts tests -name '*.js' -print0 | xargs -0 -n1 node --check
+          bash -n scripts/backup-db.sh scripts/restore-db.sh
       - name: Executar testes unitários e de integração
         run: npm test
       - name: Criar conta administrativa isolada para E2E
