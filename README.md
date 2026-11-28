@@ -54,7 +54,7 @@ mariadb -u root -p < database/schema.sql
 cp .env.example .env
 ```
 
-Configure o arquivo `.env`. Gere `AUTH_SECRET` com `openssl rand -hex 32` e mantenha o valor em segredo:
+Configure o arquivo `.env`. Gere `AUTH_SECRET` com `openssl rand -hex 32` e mantenha o valor em segredo. Em desenvolvimento, mantenha a origem local do Vite em `CORS_ORIGINS`; em produção, substitua pela origem HTTPS exata do frontend. `TRUST_PROXY` e `ENABLE_HSTS` permanecem desativados localmente:
 
 ```dotenv
 DB_HOST=127.0.0.1
@@ -64,6 +64,9 @@ DB_PASSWORD=sua_senha_local
 DB_NAME=maos_que_ajudam
 PORT=3000
 AUTH_SECRET=
+CORS_ORIGINS=http://localhost:5173
+TRUST_PROXY=0
+ENABLE_HSTS=0
 ```
 
 Crie um usuário de banco dedicado e conceda apenas as permissões necessárias. Não use a conta administrativa em uma instalação compartilhada.
@@ -125,6 +128,8 @@ Consulte [docs/API.md](docs/API.md) e [openapi.yaml](openapi.yaml) para o contra
 npm test
 npm run build
 ```
+
+O teste E2E de navegador é executado no GitHub Actions. Para executá-lo localmente, instale temporariamente `@playwright/test`, instale o Chromium com `npx playwright install chromium` e rode `npx playwright test`.
 
 Os testes cobrem hash de senhas, assinatura e expiração de tokens, revogação de sessões, validações, paginação, regras de transição, autenticação, autorização, rollback transacional, movimentações automáticas e manuais, alertas de estoque mínimo, auditoria, CORS e exportação CSV. O CI inicializa MariaDB 10.11, executa schema, migrações e seed duas vezes, roda testes unitários e de integração, valida o fluxo de login/logout em Chromium e gera o build.
 
