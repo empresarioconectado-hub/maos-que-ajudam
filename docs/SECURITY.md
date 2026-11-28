@@ -55,7 +55,7 @@ TRUST_PROXY=1
 ENABLE_HSTS=1
 ```
 
-Ative `TRUST_PROXY=1` somente quando houver proxy reverso conhecido e corretamente configurado. Ative HSTS apenas depois de HTTPS estar funcionando para o domínio e subdomínios cobertos.
+Configure `TRUST_PROXY` com o número exato de saltos confiáveis (por exemplo, `1` para um proxy) ou com os endereços/CIDRs dos proxies conhecidos. Nunca confie em cabeçalhos encaminhados enviados diretamente por clientes. Ative HSTS apenas depois de HTTPS estar funcionando para o domínio e subdomínios cobertos.
 
 ## Requisitos obrigatórios antes de produção
 
