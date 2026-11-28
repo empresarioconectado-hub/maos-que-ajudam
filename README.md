@@ -130,7 +130,7 @@ Os testes cobrem hash de senhas, assinatura e expiração de tokens, revogação
 
 ## Banco de dados
 
-O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas, perfis e sessões revogáveis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem, [a migração 002](database/migrations/002_gestao_operacional.sql) e [a migração 003](database/migrations/003_autenticacao.sql), [a migração 004](database/migrations/004_limite_minimo_estoque.sql) [a migração 005](database/migrations/005_sessoes_revogaveis.sql) e [a migração 006](database/migrations/006_limite_login_compartilhado.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
+O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas, perfis e sessões revogáveis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem: [002](database/migrations/002_gestao_operacional.sql), [003](database/migrations/003_autenticacao.sql), [004](database/migrations/004_limite_minimo_estoque.sql), [005](database/migrations/005_sessoes_revogaveis.sql) e [006](database/migrations/006_limite_login_compartilhado.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
 
 ## Documentação
 
