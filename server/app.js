@@ -14,7 +14,7 @@ import relatoriosRoutes from "./routes/relatorios.js";
 const app = express();
 app.disable("x-powered-by");
 const proxyTrust = (process.env.TRUST_PROXY || "0").trim();
-if (/^\\d+$/.test(proxyTrust)) {
+if (/^\d+$/.test(proxyTrust)) {
   app.set("trust proxy", Number(proxyTrust));
 } else if (proxyTrust) {
   app.set("trust proxy", proxyTrust.split(",").map(value => value.trim()).filter(Boolean));
