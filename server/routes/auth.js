@@ -1,47 +1,43 @@
 import { Router } from "express";
+import { createHmac } from "node:crypto";
 import pool from "../db.js";
 import { HttpError } from "../erros.js";
 import { autenticar, emitirToken, verificarSenha, validarToken } from "../auth.js";
 
 const router = Router();
-const tentativasLogin = new Map();
-const JANELA_LOGIN_MS = 15 * 60 * 1000;
+const JANELA_LOGIN_MINUTOS = 15;
 const MAX_TENTATIVAS_LOGIN = 10;
 
-function limitarTentativasLogin(req, res, next) {
-  const agora = Date.now();
-  const chave = req.ip || req.socket.remoteAddress || "desconhecido";
-  let registro = tentativasLogin.get(chave);
-  if (!registro || agora >= registro.expiraEm) {
-    registro = { quantidade: 0, expiraEm: agora + JANELA_LOGIN_MS };
-    tentativasLogin.set(chave, registro);
-  }
-  if (registro.quantidade >= MAX_TENTATIVAS_LOGIN) {
-    res.set("Retry-After", String(Math.ceil((registro.expiraEm - agora) / 1000)));
+async function reservarTentativaLogin(req, res, next) {
+  const endereco = req.ip || req.socket.remoteAddress || "desconhecido";
+  const chave = createHmac("sha256", process.env.AUTH_SECRET).update(endereco).digest("hex");
+
+  await pool.execute(
+    "INSERT INTO limite_login (chave, tentativas, janela_inicio) " +
+    "VALUES (?, 1, UTC_TIMESTAMP()) " +
+    "ON DUPLICATE KEY UPDATE " +
+    "tentativas = IF(janela_inicio <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE), 1, tentativas + 1), " +
+    "janela_inicio = IF(janela_inicio <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE), UTC_TIMESTAMP(), janela_inicio)",
+    [chave]
+  );
+  const [registros] = await pool.execute(
+    "SELECT tentativas, GREATEST(1, TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), " +
+    "DATE_ADD(janela_inicio, INTERVAL 15 MINUTE))) AS aguardar " +
+    "FROM limite_login WHERE chave = ?",
+    [chave]
+  );
+  if (registros[0].tentativas > MAX_TENTATIVAS_LOGIN) {
+    res.set("Retry-After", String(registros[0].aguardar));
     return res.status(429).json({
       erro: "Muitas tentativas de acesso. Aguarde antes de tentar novamente.",
       requestId: req.requestId,
     });
   }
   req.chaveLimiteLogin = chave;
-  if (tentativasLogin.size > 10000) {
-    for (const [ip, item] of tentativasLogin) {
-      if (agora >= item.expiraEm) tentativasLogin.delete(ip);
-    }
-  }
   return next();
 }
 
-function registrarFalhaLogin(req) {
-  const agora = Date.now();
-  const registro = tentativasLogin.get(req.chaveLimiteLogin) || {
-    quantidade: 0, expiraEm: agora + JANELA_LOGIN_MS,
-  };
-  registro.quantidade += 1;
-  tentativasLogin.set(req.chaveLimiteLogin, registro);
-}
-
-router.post("/login", limitarTentativasLogin, async (req, res) => {
+router.post("/login", reservarTentativaLogin, async (req, res) => {
   const { email, senha } = req.body ?? {};
   if (typeof email !== "string" || email.trim().length > 100 ||
       typeof senha !== "string" || senha.length > 128) {
@@ -58,11 +54,10 @@ router.post("/login", limitarTentativasLogin, async (req, res) => {
     ? await verificarSenha(senha, usuario.senha_hash)
     : await verificarSenha(senha, "scrypt$00000000000000000000000000000000$" + "0".repeat(128));
   if (!usuario || !usuario.ativo || !senhaValida) {
-    registrarFalhaLogin(req);
     throw new HttpError(401, "E-mail ou senha incorretos");
   }
-  tentativasLogin.delete(req.chaveLimiteLogin);
 
+  await pool.execute("DELETE FROM limite_login WHERE chave = ?", [req.chaveLimiteLogin]);
   const token = emitirToken(usuario);
   const identidade = validarToken(token);
   await pool.execute(
