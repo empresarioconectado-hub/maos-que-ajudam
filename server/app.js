@@ -13,7 +13,14 @@ import relatoriosRoutes from "./routes/relatorios.js";
 
 const app = express();
 app.disable("x-powered-by");
-app.set("trust proxy", process.env.TRUST_PROXY === "1");
+const proxyTrust = (process.env.TRUST_PROXY || "0").trim();
+if (/^\\d+$/.test(proxyTrust)) {
+  app.set("trust proxy", Number(proxyTrust));
+} else if (proxyTrust) {
+  app.set("trust proxy", proxyTrust.split(",").map(value => value.trim()).filter(Boolean));
+} else {
+  app.set("trust proxy", false);
+}
 
 const origensPermitidas = new Set(
   (process.env.CORS_ORIGINS || "").split(",").map(origem => origem.trim()).filter(Boolean)
@@ -30,7 +37,7 @@ app.use((req, res, next) => {
     "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",
     "Cache-Control": "no-store",
   });
-  if (process.env.ENABLE_HSTS === "1") {
+  if (process.env.ENABLE_HSTS === "1" && req.secure) {
     res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }
 
