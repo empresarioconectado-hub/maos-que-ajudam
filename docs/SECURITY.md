@@ -36,7 +36,7 @@ O endpoint `POST /api/auth/logout` revoga a sessão apresentada. `POST /api/auth
 - O CI possui um fluxo E2E inicial em Chromium para login, carregamento do painel e revogação no logout; ainda falta ampliar cobertura dos fluxos de negócio, análise DAST e pentest independente.
 - Backup e restauração possuem scripts, mas o agendamento, armazenamento externo, criptografia em repouso, alertas e testes regulares precisam ser configurados no ambiente operacional.
 - Não há monitoramento externo ou gestão centralizada de logs.
-- A adequação à LGPD depende de decisões institucionais e jurídicas sobre finalidade, base legal, minimização, transparência, retenção, descarte e atendimento aos titulares.
+- A adequação à LGPD depende de decisões institucionais e jurídicas sobre finalidade, base legal, minimização, transparência, retenção, descarte e atendimento aos titulares; consulte o inventário inicial em [PRIVACY.md](PRIVACY.md), que ainda exige preenchimento e aprovação institucional.
 
 ## Configuração recomendada
 
