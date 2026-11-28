@@ -76,6 +76,15 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
   const responseWithId = await fetch(base + "/api/health/live");
   assert.match(responseWithId.headers.get("x-request-id") || "", /^[0-9a-f-]{36}$/i);
   assert.equal(responseWithId.headers.get("x-content-type-options"), "nosniff");
+  assert.match(responseWithId.headers.get("content-security-policy") || "", /default-src 'none'/);
+  const origemPermitida = process.env.CORS_ORIGINS?.split(",")[0];
+  if (origemPermitida) {
+    const corsPermitido = await fetch(base + "/api/health/live", { headers: { Origin: origemPermitida } });
+    assert.equal(corsPermitido.status, 200);
+    assert.equal(corsPermitido.headers.get("access-control-allow-origin"), origemPermitida);
+    const corsNegado = await fetch(base + "/api/health/live", { headers: { Origin: "https://origem-nao-autorizada.example" } });
+    assert.equal(corsNegado.status, 403);
+  }
   const health = await request("/api/health/ready");
   assert.equal(health.status, 200);
   assert.equal(health.body.database, "connected");
@@ -260,6 +269,33 @@ test("API integra cadastro, recebimento, estoque, distribuição e auditoria", a
 
   const exclusaoComAdmin = await request(`/api/doadores/${idDoador}`, { method: "DELETE" });
   assert.equal(exclusaoComAdmin.status, 409);
+
+  // Logout individual revoga o token no banco imediatamente.
+  const loginLogout = await request("/api/auth/login", {
+    method: "POST", body: JSON.stringify({ email: emailAdmin, senha: "Outra-senha-forte-para-teste-2026!" }),
+  });
+  assert.equal(loginLogout.status, 200);
+  token = loginLogout.body.token;
+  const logout = await request("/api/auth/logout", { method: "POST" });
+  assert.equal(logout.status, 204);
+  const tokenRevogado = await request("/api/doadores");
+  assert.equal(tokenRevogado.status, 401);
+
+  // Revogação global invalida sessões abertas em outros dispositivos.
+  const loginDispositivoA = await request("/api/auth/login", {
+    method: "POST", body: JSON.stringify({ email: emailAdmin, senha: "Outra-senha-forte-para-teste-2026!" }),
+  });
+  const loginDispositivoB = await request("/api/auth/login", {
+    method: "POST", body: JSON.stringify({ email: emailAdmin, senha: "Outra-senha-forte-para-teste-2026!" }),
+  });
+  assert.equal(loginDispositivoA.status, 200);
+  assert.equal(loginDispositivoB.status, 200);
+  token = loginDispositivoA.body.token;
+  const logoutGlobal = await request("/api/auth/logout-all", { method: "POST" });
+  assert.equal(logoutGlobal.status, 204);
+  token = loginDispositivoB.body.token;
+  const outraSessaoRevogada = await request("/api/doadores");
+  assert.equal(outraSessaoRevogada.status, 401);
 
   await pool.execute("UPDATE usuario SET ativo = 0 WHERE email = ?", [emailOperador]);
   token = tokenOperador;
