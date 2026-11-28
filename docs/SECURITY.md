@@ -61,7 +61,7 @@ Ative `TRUST_PROXY=1` somente quando houver proxy reverso conhecido e corretamen
 
 1. Implantar frontend e API em domínio controlado, com TLS, redirecionamento HTTPS e CSP no servidor do frontend.
 2. Definir CORS com a origem exata do frontend e revisar a confiança no proxy.
-3. Substituir o limitador em memória por solução distribuída e configurar WAF/rate limit no perímetro.
+3. Configurar WAF/rate limit no perímetro como camada adicional ao limitador compartilhado pelo banco.
 4. Implementar MFA e recuperação de senha com canal de entrega seguro, tokens de uso único, expiração e auditoria.
 5. Definir armazenamento externo, criptografia, retenção e agendamento dos backups; realizar exercícios de restauração documentados.
 6. Configurar monitoramento externo, alertas, retenção de logs e resposta a incidentes.
