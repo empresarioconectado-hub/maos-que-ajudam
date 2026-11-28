@@ -1,3 +1,7 @@
+# Backups locais nunca devem ser versionados.
+/backups/
+*.sql.gz
+
 # Logs
 logs
 *.log
