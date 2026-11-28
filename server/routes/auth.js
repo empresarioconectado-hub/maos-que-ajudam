@@ -5,13 +5,13 @@ import { HttpError } from "../erros.js";
 import { autenticar, emitirToken, verificarSenha, validarToken } from "../auth.js";
 
 const router = Router();
-const JANELA_LOGIN_MINUTOS = 15;
 const MAX_TENTATIVAS_LOGIN = 10;
 
 async function reservarTentativaLogin(req, res, next) {
   const endereco = req.ip || req.socket.remoteAddress || "desconhecido";
   const chave = createHmac("sha256", process.env.AUTH_SECRET).update(endereco).digest("hex");
 
+  await pool.execute("DELETE FROM limite_login WHERE janela_inicio < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)");
   await pool.execute(
     "INSERT INTO limite_login (chave, tentativas, janela_inicio) " +
     "VALUES (?, 1, UTC_TIMESTAMP()) " +
