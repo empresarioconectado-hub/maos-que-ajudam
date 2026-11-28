@@ -18,7 +18,7 @@ Sistema web para organizar o cadastro de doadores, consultar o catálogo de iten
 - Verificações de liveness e readiness da API.
 - Login com senha protegida por scrypt e token Bearer com expiração de 8 horas.
 - Perfis de administrador e operador, com exclusão de doadores restrita ao administrador.
-- Limitação de tentativas de login por processo.
+- Limitação compartilhada de tentativas de login, persistida no banco e compatível com múltiplas instâncias.
 - Sessões persistidas e revogáveis; logout individual e encerramento de todas as sessões da conta.
 - CORS por allowlist, cabeçalhos defensivos e opções explícitas de HSTS/proxy reverso.
 - Scripts de backup e restauração do MariaDB/MySQL, com validação do arquivo e confirmação para restauração.
@@ -130,7 +130,7 @@ Os testes cobrem hash de senhas, assinatura e expiração de tokens, revogação
 
 ## Banco de dados
 
-O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas, perfis e sessões revogáveis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem, [a migração 002](database/migrations/002_gestao_operacional.sql) e [a migração 003](database/migrations/003_autenticacao.sql), [a migração 004](database/migrations/004_limite_minimo_estoque.sql) e [a migração 005](database/migrations/005_sessoes_revogaveis.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
+O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `doacao_item`. A extensão operacional adiciona `estoque`, `movimentacao_estoque`, `auditoria` e `usuario` para contas, perfis e sessões revogáveis. O schema completo para bancos novos está em [database/schema.sql](database/schema.sql). Para bancos existentes, faça backup e aplique, em ordem, [a migração 002](database/migrations/002_gestao_operacional.sql) e [a migração 003](database/migrations/003_autenticacao.sql), [a migração 004](database/migrations/004_limite_minimo_estoque.sql) [a migração 005](database/migrations/005_sessoes_revogaveis.sql) e [a migração 006](database/migrations/006_limite_login_compartilhado.sql). As migrações podem ser reexecutadas sem duplicar colunas, constraints ou tabelas. Os dados fictícios estão em [database/seed.sql](database/seed.sql).
 
 ## Documentação
 
@@ -145,7 +145,7 @@ O modelo acadêmico original contém `doador`, `categoria`, `item`, `doacao` e `
 
 A autenticação utiliza tokens Bearer assinados com `AUTH_SECRET`, senhas derivadas por scrypt e perfis de acesso. A trilha de auditoria registra criação e transições de status vinculadas à conta autenticada que executou a operação. As migrações são SQL versionadas e reexecutáveis, mas ainda não há um gerenciador automatizado de migrações. Os cabeçalhos HTTP e identificadores de requisição são medidas básicas, não uma certificação de segurança.
 
-A autenticação implementada é uma base para o projeto, não uma certificação de segurança. As sessões agora são persistidas e podem ser revogadas individualmente ou em conjunto. Ainda faltam MFA, recuperação de senha, rate limiting distribuído, E2E em navegador, implantação HTTPS, monitoramento externo e configuração de backup agendado em armazenamento independente. Os scripts de backup/restauração estão disponíveis, mas precisam ser agendados e testados no ambiente de implantação. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
+A autenticação implementada é uma base para o projeto, não uma certificação de segurança. As sessões agora são persistidas e podem ser revogadas individualmente ou em conjunto. Ainda faltam MFA, recuperação de senha, implantação HTTPS, monitoramento externo e configuração de backup agendado em armazenamento independente. O limite de login é compartilhado pelo banco; proteção adicional no proxy/WAF ainda deve ser configurada. Os scripts de backup/restauração estão disponíveis, mas precisam ser agendados e testados no ambiente de implantação. A adequação à LGPD depende também de decisões operacionais e jurídicas sobre finalidade, base legal, retenção e direitos dos titulares.
 
 ## Contexto
 
