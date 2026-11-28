@@ -28,7 +28,7 @@ O endpoint `POST /api/auth/logout` revoga a sessão apresentada. `POST /api/auth
 
 ## Limitações ainda existentes
 
-- O limitador de tentativas de login é mantido em memória por processo. Em implantação com múltiplas instâncias, deve ser substituído por mecanismo compartilhado (por exemplo Redis ou tabela transacional no banco) e protegido também no proxy/WAF.
+- O limitador de login agora compartilha estado pelo banco entre instâncias da aplicação. Em ambientes de maior escala, complemente com proteção de perímetro (WAF/rate limit do proxy) e monitore a tabela de controle.
 - Não há MFA, recuperação de senha por e-mail ou fluxo self-service de redefinição.
 - O token do navegador permanece em `sessionStorage`; XSS pode acessá-lo. CSP da API não substitui CSP no servidor que entrega o frontend. A hospedagem do frontend deve enviar sua própria CSP, preferencialmente com nonce/hash e sem `unsafe-inline`.
 - Não há HTTPS configurado pelo código: certificado, redirecionamento HTTP→HTTPS, renovação TLS e HSTS dependem do domínio/proxy/hospedagem.
